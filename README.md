@@ -165,22 +165,6 @@ jupyter notebook credit_scorecard_analysis.ipynb
 4. **Scalable:** Automated scorecard processes thousands of merchants simultaneously
 5. **Explainable:** Every score component is transparent and auditable
 
-## Interview Talking Points
-
-**Q: How is this different from traditional credit appraisal?**
-> At Kotak, I assessed large corporate credit using CIBIL and audited financials. This project shows I can apply the same credit discipline to SME lending — using transaction velocity and settlement patterns instead of balance sheets.
-
-**Q: Why k-Means clustering?**
-> Unsupervised learning segments merchants into natural risk groups without pre-labeled data. This mirrors how Razorpay Capital discovers merchant segments from platform behavior.
-
-**Q: How do you handle seasonality?**
-> Seasonal businesses (Travel, Retail) get higher seasonality indices. We prefer stable cashflow (index <1.2) for lending, but adjust limits for known seasonal patterns.
-
-**Q: What about DSCR?**
-> DSCR >2.0x means the merchant can cover debt service twice over from available cashflow. It's the most important financial health indicator in the scorecard.
-
-**Q: Why different credit limits for the same grade?**
-> The limit engine combines grade multiplier (A=3x) with DSCR adjustment and monthly volume. Two Grade A merchants can have very different limits based on their actual cashflow capacity.
 
 ## About the Author
 
