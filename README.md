@@ -128,43 +128,6 @@ merchant-credit-scorecard/
     └── dashboard_preview.png           ← For LinkedIn/GitHub preview
 ```
 
-## How to Run
-
-### 1. Generate Data
-```bash
-cd data
-python generate_merchant_data.py
-# Outputs: merchants.csv
-```
-
-### 2. Run Scorecard Engine
-```bash
-cd engine
-python scorecard_engine.py
-# Outputs: scorecard_results.csv
-```
-
-### 3. Run Analysis
-```bash
-cd notebooks
-jupyter notebook credit_scorecard_analysis.ipynb
-```
-
-### 4. Deploy Dashboard
-```bash
-# Push index.html to GitHub
-# Enable GitHub Pages in Settings
-# Your dashboard is live at: https://yourusername.github.io/merchant-credit-scorecard/
-```
-
-## Why This Matters for Fintech
-
-1. **Alternative Data:** Uses transaction velocity, chargeback patterns, and settlement history as credit proxies instead of balance sheets
-2. **Real-Time Underwriting:** Can assess eligibility in minutes, not weeks
-3. **Dynamic Pricing:** Credit limits adjust based on real-time risk grade and capacity
-4. **Scalable:** Automated scorecard processes thousands of merchants simultaneously
-5. **Explainable:** Every score component is transparent and auditable
-
 
 ## About the Author
 
