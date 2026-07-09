@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Working-Capital Credit Scorecard for Merchants | Fintech Portfolio Project</title>
+<style>
+  :root {
+    --primary: #0f172a;
+    --secondary: #1e293b;
+    --accent: #3b82f6;
+    --accent-light: #dbeafe;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --text: #334155;
+    --text-light: #64748b;
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --border: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: white;
+    padding: 2rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -10%;
+    width: 500px; height: 500px;
+    background: rgba(59,130,246,0.1);
+    border-radius: 50%;
+  }
+  .header-content { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+  .header h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .header .subtitle { font-size: 0.95rem; opacity: 0.85; margin-bottom: 1rem; }
+  .header .meta { display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.85rem; opacity: 0.7; }
+  .header .meta span { display: flex; align-items: center; gap: 0.3rem; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .kpi-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .kpi-label { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+  .kpi-value { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
+  .kpi-delta { font-size: 0.8rem; margin-top: 0.25rem; }
+  .kpi-delta.positive { color: var(--success); }
+  .kpi-delta.negative { color: var(--danger); }
+  .kpi-delta.info { color: var(--info); }
+  .section { background: var(--card-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .section-title { font-size: 1.15rem; font-weight: 600; color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .section-title .icon { font-size: 1.3rem; }
+  .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+  .chart-container { position: relative; height: 280px; min-height: 260px; width: 100%; }
+  .chart-container canvas { display: block; width: 100%; height: 100%; }
+  .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; }
+  .search-box { position: relative; flex: 1; min-width: 200px; max-width: 400px; }
+  .search-box input {
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+  }
+  .search-box input:focus { outline: none; border-color: var(--accent); }
+  .search-box .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-light); }
+  .filter-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text);
+  }
+  .filter-btn:hover { background: var(--bg); }
+  .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .data-table th {
+    background: var(--bg);
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-light);
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .data-table th:hover { color: var(--accent); }
+  .data-table th .sort-icon { margin-left: 0.3rem; opacity: 0.5; font-size: 0.7rem; }
+  .data-table td { padding: 0.7rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .data-table tr:hover { background: var(--bg); }
+  .data-table tr { cursor: pointer; transition: background 0.15s; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge-grade-A { background: #dcfce7; color: #166534; }
+  .badge-grade-B { background: #dbeafe; color: #1e40af; }
+  .badge-grade-C { background: #fef3c7; color: #92400e; }
+  .badge-grade-D { background: #fee2e2; color: #991b1b; }
+  .badge-rec-auto { background: #dcfce7; color: #166534; }
+  .badge-rec-likely { background: #dbeafe; color: #1e40af; }
+  .badge-rec-conditional { background: #fef3c7; color: #92400e; }
+  .badge-rec-reject { background: #fee2e2; color: #991b1b; }
+  .score-bar { width: 100%; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+  .score-bar-fill.high { background: var(--success); }
+  .score-bar-fill.medium { background: var(--warning); }
+  .score-bar-fill.low { background: var(--danger); }
+  .pagination { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1rem; }
+  .page-btn {
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .page-btn:hover { background: var(--bg); }
+  .page-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .page-info { font-size: 0.8rem; color: var(--text-light); }
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--card-bg);
+    border-radius: 16px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    animation: modalIn 0.3s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .modal-header .merchant-title { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+  .modal-header .merchant-meta { font-size: 0.85rem; color: var(--text-light); margin-top: 0.25rem; }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-light);
+    padding: 0.25rem;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--danger); }
+  .modal-body { padding: 1.5rem; }
+  .modal-section { margin-bottom: 1.5rem; }
+  .modal-section-title { font-size: 0.9rem; font-weight: 600; color: var(--primary); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+  .detail-item { background: var(--bg); padding: 0.75rem; border-radius: 8px; }
+  .detail-item .label { font-size: 0.72rem; color: var(--text-light); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.3px; }
+  .detail-item .value { font-size: 1rem; font-weight: 600; color: var(--primary); }
+  .detail-item .value.positive { color: var(--success); }
+  .detail-item .value.negative { color: var(--danger); }
+  .detail-item .value.warning { color: var(--warning); }
+  .detail-item .value.info { color: var(--info); }
+  .score-breakdown { display: flex; flex-direction: column; gap: 0.75rem; }
+  .breakdown-row { display: flex; align-items: center; gap: 0.75rem; }
+  .breakdown-label { width: 200px; font-size: 0.8rem; color: var(--text); flex-shrink: 0; }
+  .breakdown-bar { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .breakdown-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+  .breakdown-value { width: 60px; text-align: right; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
+  .recommendation-box {
+    padding: 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-align: center;
+    font-size: 1rem;
+  }
+  .recommendation-box.auto { background: #dcfce7; color: #166534; }
+  .recommendation-box.likely { background: #dbeafe; color: #1e40af; }
+  .recommendation-box.conditional { background: #fef3c7; color: #92400e; }
+  .recommendation-box.reject { background: #fee2e2; color: #991b1b; }
+  .method-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+  .method-card { background: var(--bg); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--accent); }
+  .method-card h4 { font-size: 0.9rem; font-weight: 600; color: var(--primary); margin-bottom: 0.5rem; }
+  .method-card p { font-size: 0.8rem; color: var(--text-light); line-height: 1.5; }
+  .method-card .weight { font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-top: 0.5rem; }
+  .footer { text-align: center; padding: 2rem; color: var(--text-light); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: 1rem; }
+  .footer a { color: var(--accent); text-decoration: none; }
+  @media (max-width: 768px) {
+    .header h1 { font-size: 1.4rem; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .charts-grid { grid-template-columns: 1fr; }
+    .table-header { flex-direction: column; align-items: stretch; }
+    .search-box { max-width: none; }
+    .detail-grid { grid-template-columns: 1fr 1fr; }
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-light); }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in { animation: fadeIn 0.4s ease forwards; }
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+  .delay-4 { animation-delay: 0.4s; }
+  .delay-5 { animation-delay: 0.5s; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <h1>Working-Capital Credit Scorecard for Merchants</h1>
+    <div class="subtitle">AI-powered cashflow-based underwriting engine for SME lending | Fintech Portfolio Project</div>
+    <div class="meta">
+      <span>📊 150 Merchants Assessed</span>
+      <span>🔧 Built with: Python, k-Means Clustering, Weighted Scorecard</span>
+      <span>🎯 Use Case: Razorpay Capital-style merchant lending</span>
+      <span>📅 July 2026</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="kpi-grid">
+    <div class="kpi-card animate-in delay-1">
+      <div class="kpi-label">Total Merchants</div>
+      <div class="kpi-value">150</div>
+      <div class="kpi-delta info">10 business categories</div>
+    </div>
+    <div class="kpi-card animate-in delay-2">
+      <div class="kpi-label">Average Risk Score</div>
+      <div class="kpi-value">73.76/100</div>
+      <div class="kpi-delta">Weighted composite score</div>
+    </div>
+    <div class="kpi-card animate-in delay-3">
+      <div class="kpi-label">Total Credit Exposure</div>
+      <div class="kpi-value">₹11,772L</div>
+      <div class="kpi-delta">Aggregate limit pool</div>
+    </div>
+    <div class="kpi-card animate-in delay-4">
+      <div class="kpi-label">Auto-Approval Rate</div>
+      <div class="kpi-value">18.0%</div>
+      <div class="kpi-delta positive">27 merchants approved</div>
+    </div>
+    <div class="kpi-card animate-in delay-5">
+      <div class="kpi-label">Avg Credit Limit</div>
+      <div class="kpi-value">₹78L</div>
+      <div class="kpi-delta">Per merchant</div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="section animate-in delay-1">
+      <div class="section-title"><span class="icon">📊</span> Risk Grade Distribution</div>
+      <div class="chart-container"><canvas id="gradeChart"></canvas></div>
+    </div>
+    <div class="section animate-in delay-2">
+      <div class="section-title"><span class="icon">✅</span> Approval Recommendation</div>
+      <div class="chart-container"><canvas id="recChart"></canvas></div>
+    </div>
+    <div class="section animate-in delay-3">
+      <div class="section-title"><span class="icon">🏭</span> Risk by Category</div>
+      <div class="chart-container"><canvas id="categoryChart"></canvas></div>
+    </div>
+    <div class="section animate-in delay-4">
+      <div class="section-title"><span class="icon">📈</span> Score Distribution</div>
+      <div class="chart-container"><canvas id="scoreChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section animate-in">
+    <div class="section-title"><span class="icon">📋</span> Merchant Portfolio & Scorecard Results</div>
+    <div class="table-header">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search by ID, name, or category...">
+      </div>
+      <div class="filter-group">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="A">Grade A</button>
+        <button class="filter-btn" data-filter="B">Grade B</button>
+        <button class="filter-btn" data-filter="C">Grade C</button>
+        <button class="filter-btn" data-filter="D">Grade D</button>
+      </div>
+    </div>
+    <div style="overflow-x: auto;">
+      <table class="data-table" id="merchantTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable('merchant_id')">Merchant ID <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('business_name')">Business <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('category')">Category <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('risk_score')">Risk Score <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('risk_grade')">Grade <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('credit_limit_lakhs')">Credit Limit <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('recommendation')">Recommendation <span class="sort-icon">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <div class="section animate-in">
+    <div class="section-title"><span class="icon">⚙️</span> Scorecard Methodology</div>
+    <div class="method-grid">
+      <div class="method-card">
+        <h4>🔄 Transaction Behavior (25%)</h4>
+        <p>Monthly payment volume, average ticket size, active days per month, and growth trend. Higher volume with consistent activity and positive growth indicates stable, expanding cashflow.</p>
+        <div class="weight">Volume percentile, Active days %, Growth trend, Ticket size</div>
+      </div>
+      <div class="method-card">
+        <h4>⚠️ Risk Ratios (30%)</h4>
+        <p>Refund ratio and chargeback ratio are strongest predictors of merchant quality. High chargebacks (&gt;2%) trigger automatic risk flags. Refund ratio &gt;15% indicates product/service quality issues.</p>
+        <div class="weight">Refund ratio penalty, Chargeback ratio penalty</div>
+      </div>
+      <div class="method-card">
+        <h4>💵 Financial Health (25%)</h4>
+        <p>DSCR (Debt Service Coverage Ratio), settlement history score, GST filing regularity, and bank inflow consistency vs. reported volume. DSCR &gt;2.0x indicates healthy debt coverage.</p>
+        <div class="weight">DSCR, Settlement score, GST score, Inflow consistency</div>
+      </div>
+      <div class="method-card">
+        <h4>📈 Stability & Maturity (20%)</h4>
+        <p>Business vintage on platform, seasonality index (stable cashflow preferred), entity type (Pvt Ltd vs. Proprietorship), and website quality score. Vintage &gt;24 months signals business maturity.</p>
+        <div class="weight">Vintage, Seasonality, Entity type, Website score</div>
+      </div>
+      <div class="method-card">
+        <h4>🤖 k-Means Clustering</h4>
+        <p>Unsupervised learning segments merchants into 4 risk clusters using 10 behavioral and financial features. Clusters are mapped to grades A-D based on average risk score within each cluster.</p>
+        <div class="weight">Algorithm: scikit-learn KMeans (k=4)</div>
+      </div>
+      <div class="method-card">
+        <h4>💳 Credit Limit Engine</h4>
+        <p>Limit = 50% of monthly volume × grade multiplier (A=3x, B=2x, C=1x, D=0.3x) × DSCR adjustment (capped at 2x). Hard cap at ₹500 lakhs. Grade A merchants with DSCR &gt;2.0 get highest limits.</p>
+        <div class="weight">Dynamic pricing based on risk + capacity</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section animate-in">
+    <div class="section-title"><span class="icon">💡</span> About This Project</div>
+    <p style="font-size: 0.9rem; color: var(--text-light); line-height: 1.7; margin-bottom: 1rem;">
+      This project simulates how fintech lenders like <strong>Razorpay Capital</strong> assess working-capital eligibility for SMEs using 
+      <strong>alternative data</strong> from payment platforms rather than traditional audited financials. It bridges my background in 
+      corporate credit appraisal (CIBIL, FOIR, DSCR, CAM reports) with fintech's cashflow-based underwriting approach.
+    </p>
+    <p style="font-size: 0.9rem; color: var(--text-light); line-height: 1.7;">
+      <strong>Key differentiators:</strong> (1) Uses transaction velocity, chargeback patterns, and settlement history as credit proxies 
+      instead of balance sheets. (2) Combines rule-based scorecards with unsupervised clustering for robust risk segmentation. 
+      (3) Generates actionable recommendations (Auto-Approve → Manual Review → Reject) with explainable risk factors. 
+      (4) Credit limit engine dynamically adjusts for risk grade and repayment capacity (DSCR). 
+      (5) Built entirely with synthetic data to demonstrate the model architecture without exposing real merchant information.
+    </p>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Built by Kasturi Dash | Credit Risk Analyst transitioning to Fintech | <a href="mailto:kasturidash1997@gmail.com">kasturidash1997@gmail.com</a></p>
+  <p style="margin-top: 0.5rem; font-size: 0.75rem;">Synthetic data generated for portfolio demonstration. Not based on real merchant information.</p>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="merchant-title" id="modalTitle">Merchant Details</div>
+        <div class="merchant-meta" id="modalMeta">Category | Entity Type</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const merchants = [{"merchant_id": "MER3000", "business_name": "SaaS Pvt Ltd MER3000", "category": "SaaS", "entity_type": "Private Limited", "vintage_months": 12, "monthly_volume_lakhs": 39.67, "avg_ticket_size": 150.0, "refund_ratio": 0.0457, "chargeback_ratio": 0.0113, "settlement_score": 85.31, "bank_inflow_lakhs": 30.71, "seasonality_index": 0.92, "existing_debt_lakhs": 97.85, "dscr": 4.87, "gst_score": 87.79, "website_score": 58.27, "active_days_per_month": 29, "risk_score": 93.31, "risk_grade": "A", "credit_limit_lakhs": 119.01, "recommendation": "Auto-Approve", "growth_trend": 0.148}, {"merchant_id": "MER3001", "business_name": "Healthcare Pvt Ltd MER3001", "category": "Healthcare", "entity_type": "LLP", "vintage_months": 24, "monthly_volume_lakhs": 24.56, "avg_ticket_size": 150.0, "refund_ratio": 0.0409, "chargeback_ratio": 0.0062, "settlement_score": 71.7, "bank_inflow_lakhs": 21.47, "seasonality_index": 0.72, "existing_debt_lakhs": 29.69, "dscr": 8.91, "gst_score": 63.2, "website_score": 68.78, "active_days_per_month": 29, "risk_score": 92.61, "risk_grade": "A", "credit_limit_lakhs": 73.68, "recommendation": "Auto-Approve", "growth_trend": 0.057}, {"merchant_id": "MER3002", "business_name": "Gaming Pvt Ltd MER3002", "category": "Gaming", "entity_type": "Proprietorship", "vintage_months": 18, "monthly_volume_lakhs": 49.1, "avg_ticket_size": 230.83, "refund_ratio": 0.2353, "chargeback_ratio": 0.0315, "settlement_score": 80.26, "bank_inflow_lakhs": 39.46, "seasonality_index": 0.97, "existing_debt_lakhs": 165.38, "dscr": 3.88, "gst_score": 63.44, "website_score": 61.83, "active_days_per_month": 26, "risk_score": 61.47, "risk_grade": "D", "credit_limit_lakhs": 14.29, "recommendation": "Reject / High Risk", "growth_trend": 0.0937}, {"merchant_id": "MER3003", "business_name": "Gaming Pvt Ltd MER3003", "category": "Gaming", "entity_type": "Proprietorship", "vintage_months": 6, "monthly_volume_lakhs": 31.68, "avg_ticket_size": 150.0, "refund_ratio": 0.0906, "chargeback_ratio": 0.0446, "settlement_score": 60.78, "bank_inflow_lakhs": 33.87, "seasonality_index": 1.24, "existing_debt_lakhs": 82.02, "dscr": 6.27, "gst_score": 64.16, "website_score": 57.25, "active_days_per_month": 14, "risk_score": 53.57, "risk_grade": "C", "credit_limit_lakhs": 31.68, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1743}, {"merchant_id": "MER3004", "business_name": "SaaS Pvt Ltd MER3004", "category": "SaaS", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 61.15, "avg_ticket_size": 150.0, "refund_ratio": 0.021, "chargeback_ratio": 0.01, "settlement_score": 77.87, "bank_inflow_lakhs": 54.92, "seasonality_index": 0.82, "existing_debt_lakhs": 65.54, "dscr": 12.32, "gst_score": 53.49, "website_score": 28.62, "active_days_per_month": 29, "risk_score": 97.18, "risk_grade": "A", "credit_limit_lakhs": 183.45, "recommendation": "Auto-Approve", "growth_trend": 0.1732}, {"merchant_id": "MER3005", "business_name": "EdTech Pvt Ltd MER3005", "category": "EdTech", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 32.91, "avg_ticket_size": 173.26, "refund_ratio": 0.1484, "chargeback_ratio": 0.0399, "settlement_score": 40.74, "bank_inflow_lakhs": 33.66, "seasonality_index": 1.55, "existing_debt_lakhs": 95.37, "dscr": 5.46, "gst_score": 77.79, "website_score": 60.65, "active_days_per_month": 29, "risk_score": 59.69, "risk_grade": "D", "credit_limit_lakhs": 9.87, "recommendation": "Reject / High Risk", "growth_trend": 0.081}, {"merchant_id": "MER3006", "business_name": "Financial Services Pvt Ltd MER3006", "category": "Financial Services", "entity_type": "Partnership", "vintage_months": 12, "monthly_volume_lakhs": 78.68, "avg_ticket_size": 150.0, "refund_ratio": 0.0266, "chargeback_ratio": 0.0282, "settlement_score": 46.32, "bank_inflow_lakhs": 82.49, "seasonality_index": 0.75, "existing_debt_lakhs": 100.27, "dscr": 12.8, "gst_score": 90.44, "website_score": 50.31, "active_days_per_month": 25, "risk_score": 73.67, "risk_grade": "B", "credit_limit_lakhs": 157.36, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.057}, {"merchant_id": "MER3007", "business_name": "Financial Services Pvt Ltd MER3007", "category": "Financial Services", "entity_type": "Private Limited", "vintage_months": 12, "monthly_volume_lakhs": 54.98, "avg_ticket_size": 150.0, "refund_ratio": 0.0256, "chargeback_ratio": 0.0236, "settlement_score": 72.6, "bank_inflow_lakhs": 59.86, "seasonality_index": 0.77, "existing_debt_lakhs": 73.13, "dscr": 12.23, "gst_score": 54.42, "website_score": 74.26, "active_days_per_month": 17, "risk_score": 80.47, "risk_grade": "C", "credit_limit_lakhs": 54.98, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1449}, {"merchant_id": "MER3008", "business_name": "Gaming Pvt Ltd MER3008", "category": "Gaming", "entity_type": "LLP", "vintage_months": 36, "monthly_volume_lakhs": 49.0, "avg_ticket_size": 150.0, "refund_ratio": 0.039, "chargeback_ratio": 0.0395, "settlement_score": 50.44, "bank_inflow_lakhs": 48.03, "seasonality_index": 1.3, "existing_debt_lakhs": 133.58, "dscr": 5.75, "gst_score": 80.4, "website_score": 61.07, "active_days_per_month": 22, "risk_score": 77.21, "risk_grade": "C", "credit_limit_lakhs": 49.0, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1577}, {"merchant_id": "MER3009", "business_name": "Retail Pvt Ltd MER3009", "category": "Retail", "entity_type": "LLP", "vintage_months": 48, "monthly_volume_lakhs": 37.16, "avg_ticket_size": 150.0, "refund_ratio": 0.1294, "chargeback_ratio": 0.0278, "settlement_score": 64.57, "bank_inflow_lakhs": 27.92, "seasonality_index": 1.46, "existing_debt_lakhs": 113.62, "dscr": 3.87, "gst_score": 64.93, "website_score": 56.16, "active_days_per_month": 27, "risk_score": 58.48, "risk_grade": "D", "credit_limit_lakhs": 10.79, "recommendation": "Reject / High Risk", "growth_trend": 0.0597}, {"merchant_id": "MER3010", "business_name": "Financial Services Pvt Ltd MER3010", "category": "Financial Services", "entity_type": "Partnership", "vintage_months": 6, "monthly_volume_lakhs": 42.15, "avg_ticket_size": 150.0, "refund_ratio": 0.0193, "chargeback_ratio": 0.0118, "settlement_score": 36.79, "bank_inflow_lakhs": 45.97, "seasonality_index": 0.71, "existing_debt_lakhs": 122.98, "dscr": 5.94, "gst_score": 46.61, "website_score": 62.12, "active_days_per_month": 23, "risk_score": 77.51, "risk_grade": "A", "credit_limit_lakhs": 126.45, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0836}, {"merchant_id": "MER3011", "business_name": "Gaming Pvt Ltd MER3011", "category": "Gaming", "entity_type": "Proprietorship", "vintage_months": 48, "monthly_volume_lakhs": 19.18, "avg_ticket_size": 227.77, "refund_ratio": 0.0429, "chargeback_ratio": 0.0274, "settlement_score": 78.65, "bank_inflow_lakhs": 18.78, "seasonality_index": 1.33, "existing_debt_lakhs": 28.97, "dscr": 7.92, "gst_score": 65.26, "website_score": 47.21, "active_days_per_month": 28, "risk_score": 72.56, "risk_grade": "A", "credit_limit_lakhs": 57.54, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0533}, {"merchant_id": "MER3012", "business_name": "Logistics Pvt Ltd MER3012", "category": "Logistics", "entity_type": "Partnership", "vintage_months": 24, "monthly_volume_lakhs": 53.91, "avg_ticket_size": 160.43, "refund_ratio": 0.0389, "chargeback_ratio": 0.0179, "settlement_score": 42.15, "bank_inflow_lakhs": 59.3, "seasonality_index": 1.22, "existing_debt_lakhs": 133.29, "dscr": 7.12, "gst_score": 34.27, "website_score": 59.54, "active_days_per_month": 29, "risk_score": 74.52, "risk_grade": "A", "credit_limit_lakhs": 161.73, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0549}, {"merchant_id": "MER3013", "business_name": "Financial Services Pvt Ltd MER3013", "category": "Financial Services", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 83.78, "avg_ticket_size": 150.0, "refund_ratio": 0.037, "chargeback_ratio": 0.0261, "settlement_score": 59.72, "bank_inflow_lakhs": 65.9, "seasonality_index": 0.65, "existing_debt_lakhs": 160.51, "dscr": 6.67, "gst_score": 71.57, "website_score": 79.21, "active_days_per_month": 12, "risk_score": 84.83, "risk_grade": "C", "credit_limit_lakhs": 83.78, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1814}, {"merchant_id": "MER3014", "business_name": "Logistics Pvt Ltd MER3014", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 12, "monthly_volume_lakhs": 55.21, "avg_ticket_size": 150.0, "refund_ratio": 0.0577, "chargeback_ratio": 0.0056, "settlement_score": 67.38, "bank_inflow_lakhs": 53.21, "seasonality_index": 0.86, "existing_debt_lakhs": 124.41, "dscr": 6.8, "gst_score": 59.67, "website_score": 71.09, "active_days_per_month": 19, "risk_score": 85.26, "risk_grade": "A", "credit_limit_lakhs": 165.63, "recommendation": "Auto-Approve", "growth_trend": 0.0303}, {"merchant_id": "MER3015", "business_name": "EdTech Pvt Ltd MER3015", "category": "EdTech", "entity_type": "Proprietorship", "vintage_months": 18, "monthly_volume_lakhs": 11.94, "avg_ticket_size": 150.0, "refund_ratio": 0.0679, "chargeback_ratio": 0.0481, "settlement_score": 23.55, "bank_inflow_lakhs": 13.2, "seasonality_index": 1.64, "existing_debt_lakhs": 39.67, "dscr": 4.43, "gst_score": 82.43, "website_score": 59.6, "active_days_per_month": 29, "risk_score": 56.95, "risk_grade": "D", "credit_limit_lakhs": 3.58, "recommendation": "Reject / High Risk", "growth_trend": 0.1599}, {"merchant_id": "MER3016", "business_name": "E-commerce Pvt Ltd MER3016", "category": "E-commerce", "entity_type": "LLP", "vintage_months": 36, "monthly_volume_lakhs": 84.36, "avg_ticket_size": 150.0, "refund_ratio": 0.0461, "chargeback_ratio": 0.0154, "settlement_score": 75.73, "bank_inflow_lakhs": 90.12, "seasonality_index": 1.78, "existing_debt_lakhs": 194.57, "dscr": 7.62, "gst_score": 54.35, "website_score": 83.54, "active_days_per_month": 13, "risk_score": 83.9, "risk_grade": "C", "credit_limit_lakhs": 84.36, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1704}, {"merchant_id": "MER3017", "business_name": "Financial Services Pvt Ltd MER3017", "category": "Financial Services", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 100.11, "avg_ticket_size": 150.0, "refund_ratio": 0.0497, "chargeback_ratio": 0.0379, "settlement_score": 42.95, "bank_inflow_lakhs": 94.65, "seasonality_index": 0.82, "existing_debt_lakhs": 369.22, "dscr": 4.34, "gst_score": 68.6, "website_score": 70.43, "active_days_per_month": 23, "risk_score": 71.87, "risk_grade": "B", "credit_limit_lakhs": 200.22, "recommendation": "Manual Review - Conditional", "growth_trend": 0.0977}, {"merchant_id": "MER3018", "business_name": "SaaS Pvt Ltd MER3018", "category": "SaaS", "entity_type": "LLP", "vintage_months": 24, "monthly_volume_lakhs": 33.18, "avg_ticket_size": 150.0, "refund_ratio": 0.052, "chargeback_ratio": 0.0071, "settlement_score": 89.09, "bank_inflow_lakhs": 29.97, "seasonality_index": 0.91, "existing_debt_lakhs": 107.23, "dscr": 4.38, "gst_score": 58.07, "website_score": 54.46, "active_days_per_month": 16, "risk_score": 91.06, "risk_grade": "C", "credit_limit_lakhs": 33.18, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1942}, {"merchant_id": "MER3019", "business_name": "SaaS Pvt Ltd MER3019", "category": "SaaS", "entity_type": "Partnership", "vintage_months": 6, "monthly_volume_lakhs": 36.47, "avg_ticket_size": 221.14, "refund_ratio": 0.0304, "chargeback_ratio": 0.0193, "settlement_score": 71.72, "bank_inflow_lakhs": 34.2, "seasonality_index": 0.78, "existing_debt_lakhs": 32.24, "dscr": 13.38, "gst_score": 64.15, "website_score": 62.88, "active_days_per_month": 29, "risk_score": 76.33, "risk_grade": "A", "credit_limit_lakhs": 109.41, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0495}, {"merchant_id": "MER3020", "business_name": "Travel Pvt Ltd MER3020", "category": "Travel", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 35.32, "avg_ticket_size": 240.4, "refund_ratio": 0.0939, "chargeback_ratio": 0.0316, "settlement_score": 58.46, "bank_inflow_lakhs": 43.25, "seasonality_index": 2.15, "existing_debt_lakhs": 45.04, "dscr": 13.15, "gst_score": 59.26, "website_score": 34.8, "active_days_per_month": 18, "risk_score": 43.51, "risk_grade": "D", "credit_limit_lakhs": 10.6, "recommendation": "Reject / High Risk", "growth_trend": -0.0348}, {"merchant_id": "MER3021", "business_name": "SaaS Pvt Ltd MER3021", "category": "SaaS", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 46.41, "avg_ticket_size": 172.2, "refund_ratio": 0.0169, "chargeback_ratio": 0.0124, "settlement_score": 57.65, "bank_inflow_lakhs": 36.12, "seasonality_index": 0.79, "existing_debt_lakhs": 127.78, "dscr": 4.51, "gst_score": 42.61, "website_score": 33.33, "active_days_per_month": 20, "risk_score": 92.51, "risk_grade": "A", "credit_limit_lakhs": 139.23, "recommendation": "Auto-Approve", "growth_trend": 0.1373}, {"merchant_id": "MER3022", "business_name": "Logistics Pvt Ltd MER3022", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 18, "monthly_volume_lakhs": 30.53, "avg_ticket_size": 150.0, "refund_ratio": 0.0171, "chargeback_ratio": 0.009, "settlement_score": 73.88, "bank_inflow_lakhs": 26.91, "seasonality_index": 0.86, "existing_debt_lakhs": 97.96, "dscr": 4.26, "gst_score": 66.41, "website_score": 53.87, "active_days_per_month": 26, "risk_score": 88.15, "risk_grade": "A", "credit_limit_lakhs": 91.59, "recommendation": "Auto-Approve", "growth_trend": -0.0283}, {"merchant_id": "MER3023", "business_name": "E-commerce Pvt Ltd MER3023", "category": "E-commerce", "entity_type": "Private Limited", "vintage_months": 48, "monthly_volume_lakhs": 51.99, "avg_ticket_size": 150.0, "refund_ratio": 0.0265, "chargeback_ratio": 0.0226, "settlement_score": 52.37, "bank_inflow_lakhs": 61.28, "seasonality_index": 1.74, "existing_debt_lakhs": 156.88, "dscr": 6.33, "gst_score": 76.84, "website_score": 50.74, "active_days_per_month": 23, "risk_score": 80.67, "risk_grade": "B", "credit_limit_lakhs": 103.98, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1404}, {"merchant_id": "MER3024", "business_name": "Logistics Pvt Ltd MER3024", "category": "Logistics", "entity_type": "Partnership", "vintage_months": 36, "monthly_volume_lakhs": 40.99, "avg_ticket_size": 150.0, "refund_ratio": 0.0538, "chargeback_ratio": 0.0182, "settlement_score": 63.79, "bank_inflow_lakhs": 46.4, "seasonality_index": 1.26, "existing_debt_lakhs": 117.81, "dscr": 6.23, "gst_score": 91.51, "website_score": 36.67, "active_days_per_month": 17, "risk_score": 75.7, "risk_grade": "A", "credit_limit_lakhs": 122.97, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0384}, {"merchant_id": "MER3025", "business_name": "Healthcare Pvt Ltd MER3025", "category": "Healthcare", "entity_type": "LLP", "vintage_months": 36, "monthly_volume_lakhs": 49.39, "avg_ticket_size": 150.0, "refund_ratio": 0.0498, "chargeback_ratio": 0.0058, "settlement_score": 83.49, "bank_inflow_lakhs": 56.47, "seasonality_index": 0.87, "existing_debt_lakhs": 120.7, "dscr": 7.42, "gst_score": 61.0, "website_score": 26.34, "active_days_per_month": 21, "risk_score": 92.59, "risk_grade": "A", "credit_limit_lakhs": 148.17, "recommendation": "Auto-Approve", "growth_trend": 0.0946}, {"merchant_id": "MER3026", "business_name": "EdTech Pvt Ltd MER3026", "category": "EdTech", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 22.49, "avg_ticket_size": 240.14, "refund_ratio": 0.1849, "chargeback_ratio": 0.0374, "settlement_score": 50.52, "bank_inflow_lakhs": 27.83, "seasonality_index": 2.01, "existing_debt_lakhs": 54.59, "dscr": 7.26, "gst_score": 69.4, "website_score": 40.89, "active_days_per_month": 27, "risk_score": 49.55, "risk_grade": "D", "credit_limit_lakhs": 6.75, "recommendation": "Reject / High Risk", "growth_trend": 0.0363}, {"merchant_id": "MER3027", "business_name": "Retail Pvt Ltd MER3027", "category": "Retail", "entity_type": "LLP", "vintage_months": 48, "monthly_volume_lakhs": 17.52, "avg_ticket_size": 156.92, "refund_ratio": 0.0938, "chargeback_ratio": 0.0193, "settlement_score": 78.23, "bank_inflow_lakhs": 20.96, "seasonality_index": 1.34, "existing_debt_lakhs": 27.16, "dscr": 9.25, "gst_score": 69.4, "website_score": 56.84, "active_days_per_month": 24, "risk_score": 65.13, "risk_grade": "A", "credit_limit_lakhs": 52.56, "recommendation": "Manual Review - Likely Approve", "growth_trend": -0.0979}, {"merchant_id": "MER3028", "business_name": "Travel Pvt Ltd MER3028", "category": "Travel", "entity_type": "LLP", "vintage_months": 24, "monthly_volume_lakhs": 55.45, "avg_ticket_size": 150.0, "refund_ratio": 0.1242, "chargeback_ratio": 0.0347, "settlement_score": 47.33, "bank_inflow_lakhs": 43.47, "seasonality_index": 2.04, "existing_debt_lakhs": 191.81, "dscr": 3.72, "gst_score": 71.43, "website_score": 41.82, "active_days_per_month": 21, "risk_score": 48.67, "risk_grade": "D", "credit_limit_lakhs": 15.47, "recommendation": "Reject / High Risk", "growth_trend": 0.0508}, {"merchant_id": "MER3029", "business_name": "Healthcare Pvt Ltd MER3029", "category": "Healthcare", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 19.92, "avg_ticket_size": 150.0, "refund_ratio": 0.0361, "chargeback_ratio": 0.0073, "settlement_score": 65.05, "bank_inflow_lakhs": 15.37, "seasonality_index": 0.96, "existing_debt_lakhs": 77.58, "dscr": 2.99, "gst_score": 88.43, "website_score": 58.81, "active_days_per_month": 25, "risk_score": 93.1, "risk_grade": "A", "credit_limit_lakhs": 44.67, "recommendation": "Auto-Approve", "growth_trend": 0.076}, {"merchant_id": "MER3030", "business_name": "Healthcare Pvt Ltd MER3030", "category": "Healthcare", "entity_type": "Private Limited", "vintage_months": 12, "monthly_volume_lakhs": 33.8, "avg_ticket_size": 312.17, "refund_ratio": 0.0211, "chargeback_ratio": 0.0066, "settlement_score": 87.41, "bank_inflow_lakhs": 38.73, "seasonality_index": 1.03, "existing_debt_lakhs": 74.8, "dscr": 7.76, "gst_score": 61.07, "website_score": 54.88, "active_days_per_month": 28, "risk_score": 96.97, "risk_grade": "A", "credit_limit_lakhs": 101.4, "recommendation": "Auto-Approve", "growth_trend": 0.0914}, {"merchant_id": "MER3031", "business_name": "Retail Pvt Ltd MER3031", "category": "Retail", "entity_type": "LLP", "vintage_months": 6, "monthly_volume_lakhs": 54.86, "avg_ticket_size": 150.0, "refund_ratio": 0.0426, "chargeback_ratio": 0.0143, "settlement_score": 54.97, "bank_inflow_lakhs": 65.21, "seasonality_index": 1.29, "existing_debt_lakhs": 209.34, "dscr": 5.14, "gst_score": 67.77, "website_score": 71.85, "active_days_per_month": 24, "risk_score": 74.19, "risk_grade": "A", "credit_limit_lakhs": 164.58, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0084}, {"merchant_id": "MER3032", "business_name": "Gaming Pvt Ltd MER3032", "category": "Gaming", "entity_type": "Proprietorship", "vintage_months": 36, "monthly_volume_lakhs": 82.54, "avg_ticket_size": 150.0, "refund_ratio": 0.0883, "chargeback_ratio": 0.0334, "settlement_score": 51.38, "bank_inflow_lakhs": 93.76, "seasonality_index": 1.24, "existing_debt_lakhs": 131.39, "dscr": 11.4, "gst_score": 88.54, "website_score": 44.6, "active_days_per_month": 15, "risk_score": 64.07, "risk_grade": "B", "credit_limit_lakhs": 165.08, "recommendation": "Manual Review - Conditional", "growth_trend": 0.0758}, {"merchant_id": "MER3033", "business_name": "SaaS Pvt Ltd MER3033", "category": "SaaS", "entity_type": "Partnership", "vintage_months": 36, "monthly_volume_lakhs": 85.99, "avg_ticket_size": 150.1, "refund_ratio": 0.0212, "chargeback_ratio": 0.0056, "settlement_score": 40.74, "bank_inflow_lakhs": 107.47, "seasonality_index": 1.07, "existing_debt_lakhs": 209.47, "dscr": 8.47, "gst_score": 74.36, "website_score": 45.63, "active_days_per_month": 20, "risk_score": 98.55, "risk_grade": "B", "credit_limit_lakhs": 171.98, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.2561}, {"merchant_id": "MER3034", "business_name": "Healthcare Pvt Ltd MER3034", "category": "Healthcare", "entity_type": "Proprietorship", "vintage_months": 36, "monthly_volume_lakhs": 53.66, "avg_ticket_size": 150.0, "refund_ratio": 0.0136, "chargeback_ratio": 0.0041, "settlement_score": 69.46, "bank_inflow_lakhs": 64.84, "seasonality_index": 0.98, "existing_debt_lakhs": 92.99, "dscr": 10.76, "gst_score": 61.6, "website_score": 57.24, "active_days_per_month": 13, "risk_score": 92.9, "risk_grade": "A", "credit_limit_lakhs": 160.98, "recommendation": "Auto-Approve", "growth_trend": 0.0179}, {"merchant_id": "MER3035", "business_name": "SaaS Pvt Ltd MER3035", "category": "SaaS", "entity_type": "Partnership", "vintage_months": 12, "monthly_volume_lakhs": 36.87, "avg_ticket_size": 340.5, "refund_ratio": 0.0429, "chargeback_ratio": 0.0101, "settlement_score": 91.03, "bank_inflow_lakhs": 32.1, "seasonality_index": 0.87, "existing_debt_lakhs": 122.06, "dscr": 4.17, "gst_score": 87.87, "website_score": 67.36, "active_days_per_month": 23, "risk_score": 94.18, "risk_grade": "A", "credit_limit_lakhs": 110.61, "recommendation": "Auto-Approve", "growth_trend": 0.1732}, {"merchant_id": "MER3036", "business_name": "Gaming Pvt Ltd MER3036", "category": "Gaming", "entity_type": "Proprietorship", "vintage_months": 6, "monthly_volume_lakhs": 26.97, "avg_ticket_size": 150.0, "refund_ratio": 0.0467, "chargeback_ratio": 0.0414, "settlement_score": 72.25, "bank_inflow_lakhs": 30.41, "seasonality_index": 1.36, "existing_debt_lakhs": 65.32, "dscr": 6.84, "gst_score": 52.1, "website_score": 31.88, "active_days_per_month": 13, "risk_score": 55.1, "risk_grade": "C", "credit_limit_lakhs": 26.97, "recommendation": "Manual Review - Conditional", "growth_trend": 0.0541}, {"merchant_id": "MER3037", "business_name": "Gaming Pvt Ltd MER3037", "category": "Gaming", "entity_type": "Private Limited", "vintage_months": 48, "monthly_volume_lakhs": 84.01, "avg_ticket_size": 150.0, "refund_ratio": 0.1116, "chargeback_ratio": 0.0272, "settlement_score": 68.88, "bank_inflow_lakhs": 104.41, "seasonality_index": 1.42, "existing_debt_lakhs": 166.62, "dscr": 10.2, "gst_score": 64.05, "website_score": 59.89, "active_days_per_month": 12, "risk_score": 61.88, "risk_grade": "B", "credit_limit_lakhs": 168.02, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0565}, {"merchant_id": "MER3038", "business_name": "Travel Pvt Ltd MER3038", "category": "Travel", "entity_type": "LLP", "vintage_months": 24, "monthly_volume_lakhs": 58.19, "avg_ticket_size": 407.62, "refund_ratio": 0.0411, "chargeback_ratio": 0.0389, "settlement_score": 60.87, "bank_inflow_lakhs": 63.18, "seasonality_index": 1.87, "existing_debt_lakhs": 218.1, "dscr": 4.79, "gst_score": 69.49, "website_score": 56.27, "active_days_per_month": 20, "risk_score": 66.88, "risk_grade": "D", "credit_limit_lakhs": 17.46, "recommendation": "Reject / High Risk", "growth_trend": 0.091}, {"merchant_id": "MER3039", "business_name": "Travel Pvt Ltd MER3039", "category": "Travel", "entity_type": "Private Limited", "vintage_months": 48, "monthly_volume_lakhs": 28.13, "avg_ticket_size": 150.0, "refund_ratio": 0.1455, "chargeback_ratio": 0.0525, "settlement_score": 62.7, "bank_inflow_lakhs": 31.59, "seasonality_index": 2.83, "existing_debt_lakhs": 81.98, "dscr": 5.85, "gst_score": 71.63, "website_score": 48.94, "active_days_per_month": 29, "risk_score": 59.35, "risk_grade": "D", "credit_limit_lakhs": 8.44, "recommendation": "Reject / High Risk", "growth_trend": 0.1075}, {"merchant_id": "MER3040", "business_name": "Logistics Pvt Ltd MER3040", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 48, "monthly_volume_lakhs": 103.78, "avg_ticket_size": 150.0, "refund_ratio": 0.0748, "chargeback_ratio": 0.0083, "settlement_score": 79.69, "bank_inflow_lakhs": 120.95, "seasonality_index": 1.02, "existing_debt_lakhs": 226.78, "dscr": 8.85, "gst_score": 52.96, "website_score": 57.14, "active_days_per_month": 20, "risk_score": 96.06, "risk_grade": "B", "credit_limit_lakhs": 207.56, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1934}, {"merchant_id": "MER3041", "business_name": "Food & Beverage Pvt Ltd MER3041", "category": "Food & Beverage", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 29.77, "avg_ticket_size": 150.0, "refund_ratio": 0.0466, "chargeback_ratio": 0.0084, "settlement_score": 87.48, "bank_inflow_lakhs": 29.26, "seasonality_index": 1.47, "existing_debt_lakhs": 22.62, "dscr": 14.58, "gst_score": 69.48, "website_score": 22.31, "active_days_per_month": 25, "risk_score": 81.79, "risk_grade": "A", "credit_limit_lakhs": 89.31, "recommendation": "Auto-Approve", "growth_trend": 0.0129}, {"merchant_id": "MER3042", "business_name": "Financial Services Pvt Ltd MER3042", "category": "Financial Services", "entity_type": "Private Limited", "vintage_months": 6, "monthly_volume_lakhs": 59.26, "avg_ticket_size": 150.0, "refund_ratio": 0.0261, "chargeback_ratio": 0.023, "settlement_score": 73.12, "bank_inflow_lakhs": 52.26, "seasonality_index": 0.79, "existing_debt_lakhs": 31.06, "dscr": 20.99, "gst_score": 50.39, "website_score": 46.1, "active_days_per_month": 12, "risk_score": 75.62, "risk_grade": "C", "credit_limit_lakhs": 59.26, "recommendation": "Manual Review - Conditional", "growth_trend": 0.2625}, {"merchant_id": "MER3043", "business_name": "Travel Pvt Ltd MER3043", "category": "Travel", "entity_type": "Partnership", "vintage_months": 12, "monthly_volume_lakhs": 81.33, "avg_ticket_size": 150.0, "refund_ratio": 0.2526, "chargeback_ratio": 0.0264, "settlement_score": 45.75, "bank_inflow_lakhs": 90.73, "seasonality_index": 1.88, "existing_debt_lakhs": 121.19, "dscr": 11.88, "gst_score": 33.17, "website_score": 61.57, "active_days_per_month": 23, "risk_score": 44.14, "risk_grade": "D", "credit_limit_lakhs": 24.4, "recommendation": "Reject / High Risk", "growth_trend": 0.0855}, {"merchant_id": "MER3044", "business_name": "E-commerce Pvt Ltd MER3044", "category": "E-commerce", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 132.12, "avg_ticket_size": 150.0, "refund_ratio": 0.1246, "chargeback_ratio": 0.023, "settlement_score": 60.85, "bank_inflow_lakhs": 132.38, "seasonality_index": 1.23, "existing_debt_lakhs": 117.74, "dscr": 17.79, "gst_score": 70.08, "website_score": 46.15, "active_days_per_month": 24, "risk_score": 65.15, "risk_grade": "B", "credit_limit_lakhs": 264.24, "recommendation": "Manual Review - Likely Approve", "growth_trend": -0.0558}, {"merchant_id": "MER3045", "business_name": "Healthcare Pvt Ltd MER3045", "category": "Healthcare", "entity_type": "Private Limited", "vintage_months": 18, "monthly_volume_lakhs": 43.5, "avg_ticket_size": 150.0, "refund_ratio": 0.0174, "chargeback_ratio": 0.0061, "settlement_score": 54.04, "bank_inflow_lakhs": 35.41, "seasonality_index": 0.98, "existing_debt_lakhs": 164.91, "dscr": 3.49, "gst_score": 63.74, "website_score": 39.95, "active_days_per_month": 21, "risk_score": 91.3, "risk_grade": "A", "credit_limit_lakhs": 113.86, "recommendation": "Auto-Approve", "growth_trend": 0.0877}, {"merchant_id": "MER3046", "business_name": "Healthcare Pvt Ltd MER3046", "category": "Healthcare", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 32.26, "avg_ticket_size": 150.0, "refund_ratio": 0.0317, "chargeback_ratio": 0.0175, "settlement_score": 84.89, "bank_inflow_lakhs": 33.84, "seasonality_index": 0.83, "existing_debt_lakhs": 125.21, "dscr": 4.3, "gst_score": 57.98, "website_score": 39.93, "active_days_per_month": 27, "risk_score": 76.15, "risk_grade": "A", "credit_limit_lakhs": 96.78, "recommendation": "Manual Review - Likely Approve", "growth_trend": -0.0396}, {"merchant_id": "MER3047", "business_name": "Logistics Pvt Ltd MER3047", "category": "Logistics", "entity_type": "Partnership", "vintage_months": 18, "monthly_volume_lakhs": 39.37, "avg_ticket_size": 181.77, "refund_ratio": 0.0354, "chargeback_ratio": 0.0098, "settlement_score": 71.76, "bank_inflow_lakhs": 30.14, "seasonality_index": 0.85, "existing_debt_lakhs": 113.89, "dscr": 4.17, "gst_score": 47.47, "website_score": 68.22, "active_days_per_month": 19, "risk_score": 87.79, "risk_grade": "A", "credit_limit_lakhs": 118.11, "recommendation": "Auto-Approve", "growth_trend": 0.1015}, {"merchant_id": "MER3048", "business_name": "Retail Pvt Ltd MER3048", "category": "Retail", "entity_type": "Private Limited", "vintage_months": 48, "monthly_volume_lakhs": 43.47, "avg_ticket_size": 198.78, "refund_ratio": 0.046, "chargeback_ratio": 0.0186, "settlement_score": 63.02, "bank_inflow_lakhs": 33.68, "seasonality_index": 1.4, "existing_debt_lakhs": 89.09, "dscr": 5.8, "gst_score": 73.48, "website_score": 77.89, "active_days_per_month": 22, "risk_score": 82.66, "risk_grade": "A", "credit_limit_lakhs": 130.41, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0495}, {"merchant_id": "MER3049", "business_name": "SaaS Pvt Ltd MER3049", "category": "SaaS", "entity_type": "LLP", "vintage_months": 18, "monthly_volume_lakhs": 50.92, "avg_ticket_size": 150.0, "refund_ratio": 0.0345, "chargeback_ratio": 0.0282, "settlement_score": 60.92, "bank_inflow_lakhs": 59.7, "seasonality_index": 0.83, "existing_debt_lakhs": 112.82, "dscr": 8.34, "gst_score": 70.22, "website_score": 63.86, "active_days_per_month": 18, "risk_score": 75.43, "risk_grade": "C", "credit_limit_lakhs": 50.92, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1949}, {"merchant_id": "MER3050", "business_name": "Retail Pvt Ltd MER3050", "category": "Retail", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 27.92, "avg_ticket_size": 150.0, "refund_ratio": 0.0796, "chargeback_ratio": 0.0244, "settlement_score": 68.75, "bank_inflow_lakhs": 21.42, "seasonality_index": 1.58, "existing_debt_lakhs": 25.1, "dscr": 9.97, "gst_score": 31.31, "website_score": 37.54, "active_days_per_month": 19, "risk_score": 60.17, "risk_grade": "D", "credit_limit_lakhs": 8.38, "recommendation": "Reject / High Risk", "growth_trend": 0.0466}, {"merchant_id": "MER3051", "business_name": "Financial Services Pvt Ltd MER3051", "category": "Financial Services", "entity_type": "Private Limited", "vintage_months": 48, "monthly_volume_lakhs": 157.11, "avg_ticket_size": 150.0, "refund_ratio": 0.0233, "chargeback_ratio": 0.0223, "settlement_score": 61.19, "bank_inflow_lakhs": 133.06, "seasonality_index": 0.87, "existing_debt_lakhs": 415.92, "dscr": 5.44, "gst_score": 68.77, "website_score": 27.04, "active_days_per_month": 24, "risk_score": 94.56, "risk_grade": "B", "credit_limit_lakhs": 314.22, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1097}, {"merchant_id": "MER3052", "business_name": "Gaming Pvt Ltd MER3052", "category": "Gaming", "entity_type": "Private Limited", "vintage_months": 12, "monthly_volume_lakhs": 31.74, "avg_ticket_size": 150.0, "refund_ratio": 0.1829, "chargeback_ratio": 0.028, "settlement_score": 60.21, "bank_inflow_lakhs": 25.88, "seasonality_index": 1.03, "existing_debt_lakhs": 28.07, "dscr": 11.16, "gst_score": 75.27, "website_score": 80.85, "active_days_per_month": 21, "risk_score": 60.64, "risk_grade": "D", "credit_limit_lakhs": 9.52, "recommendation": "Reject / High Risk", "growth_trend": 0.0864}, {"merchant_id": "MER3053", "business_name": "Logistics Pvt Ltd MER3053", "category": "Logistics", "entity_type": "Partnership", "vintage_months": 36, "monthly_volume_lakhs": 85.9, "avg_ticket_size": 150.0, "refund_ratio": 0.0397, "chargeback_ratio": 0.0162, "settlement_score": 60.31, "bank_inflow_lakhs": 90.73, "seasonality_index": 1.28, "existing_debt_lakhs": 74.39, "dscr": 18.27, "gst_score": 71.18, "website_score": 72.25, "active_days_per_month": 28, "risk_score": 87.32, "risk_grade": "B", "credit_limit_lakhs": 171.8, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0636}, {"merchant_id": "MER3054", "business_name": "SaaS Pvt Ltd MER3054", "category": "SaaS", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 55.16, "avg_ticket_size": 150.0, "refund_ratio": 0.0099, "chargeback_ratio": 0.0242, "settlement_score": 40.03, "bank_inflow_lakhs": 62.69, "seasonality_index": 1.0, "existing_debt_lakhs": 186.43, "dscr": 5.51, "gst_score": 48.01, "website_score": 62.57, "active_days_per_month": 15, "risk_score": 80.33, "risk_grade": "C", "credit_limit_lakhs": 55.16, "recommendation": "Manual Review - Conditional", "growth_trend": 0.2215}, {"merchant_id": "MER3055", "business_name": "Retail Pvt Ltd MER3055", "category": "Retail", "entity_type": "Partnership", "vintage_months": 18, "monthly_volume_lakhs": 27.52, "avg_ticket_size": 150.0, "refund_ratio": 0.045, "chargeback_ratio": 0.0176, "settlement_score": 80.02, "bank_inflow_lakhs": 28.25, "seasonality_index": 1.12, "existing_debt_lakhs": 45.26, "dscr": 8.56, "gst_score": 81.43, "website_score": 45.95, "active_days_per_month": 29, "risk_score": 78.42, "risk_grade": "A", "credit_limit_lakhs": 82.56, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0516}, {"merchant_id": "MER3056", "business_name": "Gaming Pvt Ltd MER3056", "category": "Gaming", "entity_type": "Private Limited", "vintage_months": 18, "monthly_volume_lakhs": 32.18, "avg_ticket_size": 150.0, "refund_ratio": 0.1052, "chargeback_ratio": 0.033, "settlement_score": 43.32, "bank_inflow_lakhs": 27.79, "seasonality_index": 1.36, "existing_debt_lakhs": 74.07, "dscr": 5.62, "gst_score": 89.49, "website_score": 71.13, "active_days_per_month": 25, "risk_score": 64.62, "risk_grade": "D", "credit_limit_lakhs": 9.65, "recommendation": "Reject / High Risk", "growth_trend": 0.1536}, {"merchant_id": "MER3057", "business_name": "Financial Services Pvt Ltd MER3057", "category": "Financial Services", "entity_type": "Private Limited", "vintage_months": 18, "monthly_volume_lakhs": 57.27, "avg_ticket_size": 285.51, "refund_ratio": 0.0325, "chargeback_ratio": 0.0302, "settlement_score": 34.77, "bank_inflow_lakhs": 67.81, "seasonality_index": 0.89, "existing_debt_lakhs": 71.44, "dscr": 14.14, "gst_score": 59.68, "website_score": 59.07, "active_days_per_month": 29, "risk_score": 78.56, "risk_grade": "B", "credit_limit_lakhs": 114.54, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1294}, {"merchant_id": "MER3058", "business_name": "Logistics Pvt Ltd MER3058", "category": "Logistics", "entity_type": "Partnership", "vintage_months": 24, "monthly_volume_lakhs": 22.0, "avg_ticket_size": 150.0, "refund_ratio": 0.0377, "chargeback_ratio": 0.0111, "settlement_score": 45.24, "bank_inflow_lakhs": 22.25, "seasonality_index": 0.85, "existing_debt_lakhs": 48.04, "dscr": 6.43, "gst_score": 75.78, "website_score": 78.63, "active_days_per_month": 13, "risk_score": 80.34, "risk_grade": "C", "credit_limit_lakhs": 22.0, "recommendation": "Manual Review - Conditional", "growth_trend": 0.0423}, {"merchant_id": "MER3059", "business_name": "Retail Pvt Ltd MER3059", "category": "Retail", "entity_type": "Partnership", "vintage_months": 24, "monthly_volume_lakhs": 36.26, "avg_ticket_size": 150.0, "refund_ratio": 0.012, "chargeback_ratio": 0.0069, "settlement_score": 56.52, "bank_inflow_lakhs": 43.88, "seasonality_index": 1.37, "existing_debt_lakhs": 106.55, "dscr": 6.45, "gst_score": 67.49, "website_score": 62.9, "active_days_per_month": 27, "risk_score": 88.79, "risk_grade": "A", "credit_limit_lakhs": 108.78, "recommendation": "Auto-Approve", "growth_trend": 0.0494}, {"merchant_id": "MER3060", "business_name": "Gaming Pvt Ltd MER3060", "category": "Gaming", "entity_type": "Partnership", "vintage_months": 48, "monthly_volume_lakhs": 41.94, "avg_ticket_size": 150.0, "refund_ratio": 0.0397, "chargeback_ratio": 0.0328, "settlement_score": 44.58, "bank_inflow_lakhs": 34.37, "seasonality_index": 0.96, "existing_debt_lakhs": 55.32, "dscr": 8.87, "gst_score": 70.0, "website_score": 59.47, "active_days_per_month": 23, "risk_score": 77.01, "risk_grade": "B", "credit_limit_lakhs": 83.88, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1558}, {"merchant_id": "MER3061", "business_name": "Travel Pvt Ltd MER3061", "category": "Travel", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 68.1, "avg_ticket_size": 150.0, "refund_ratio": 0.0304, "chargeback_ratio": 0.036, "settlement_score": 56.99, "bank_inflow_lakhs": 76.2, "seasonality_index": 2.62, "existing_debt_lakhs": 232.43, "dscr": 5.44, "gst_score": 74.43, "website_score": 49.39, "active_days_per_month": 25, "risk_score": 61.05, "risk_grade": "D", "credit_limit_lakhs": 20.43, "recommendation": "Reject / High Risk", "growth_trend": 0.0437}, {"merchant_id": "MER3062", "business_name": "Retail Pvt Ltd MER3062", "category": "Retail", "entity_type": "LLP", "vintage_months": 36, "monthly_volume_lakhs": 36.71, "avg_ticket_size": 150.0, "refund_ratio": 0.0537, "chargeback_ratio": 0.0101, "settlement_score": 78.76, "bank_inflow_lakhs": 30.52, "seasonality_index": 1.31, "existing_debt_lakhs": 144.71, "dscr": 3.4, "gst_score": 66.48, "website_score": 39.26, "active_days_per_month": 21, "risk_score": 80.51, "risk_grade": "A", "credit_limit_lakhs": 93.61, "recommendation": "Auto-Approve", "growth_trend": -0.0265}, {"merchant_id": "MER3063", "business_name": "Financial Services Pvt Ltd MER3063", "category": "Financial Services", "entity_type": "LLP", "vintage_months": 18, "monthly_volume_lakhs": 31.26, "avg_ticket_size": 150.0, "refund_ratio": 0.0604, "chargeback_ratio": 0.015, "settlement_score": 86.36, "bank_inflow_lakhs": 34.72, "seasonality_index": 0.66, "existing_debt_lakhs": 113.19, "dscr": 4.83, "gst_score": 69.26, "website_score": 56.75, "active_days_per_month": 27, "risk_score": 85.21, "risk_grade": "A", "credit_limit_lakhs": 93.78, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1606}, {"merchant_id": "MER3064", "business_name": "Logistics Pvt Ltd MER3064", "category": "Logistics", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 48.94, "avg_ticket_size": 310.15, "refund_ratio": 0.0265, "chargeback_ratio": 0.0164, "settlement_score": 72.9, "bank_inflow_lakhs": 55.64, "seasonality_index": 1.25, "existing_debt_lakhs": 107.69, "dscr": 8.1, "gst_score": 58.95, "website_score": 91.39, "active_days_per_month": 26, "risk_score": 85.2, "risk_grade": "A", "credit_limit_lakhs": 146.82, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0976}, {"merchant_id": "MER3065", "business_name": "Gaming Pvt Ltd MER3065", "category": "Gaming", "entity_type": "Partnership", "vintage_months": 18, "monthly_volume_lakhs": 28.16, "avg_ticket_size": 161.81, "refund_ratio": 0.0238, "chargeback_ratio": 0.0367, "settlement_score": 36.0, "bank_inflow_lakhs": 24.41, "seasonality_index": 1.05, "existing_debt_lakhs": 110.51, "dscr": 3.47, "gst_score": 71.27, "website_score": 71.04, "active_days_per_month": 19, "risk_score": 72.4, "risk_grade": "C", "credit_limit_lakhs": 24.43, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1111}, {"merchant_id": "MER3066", "business_name": "Gaming Pvt Ltd MER3066", "category": "Gaming", "entity_type": "Proprietorship", "vintage_months": 18, "monthly_volume_lakhs": 23.22, "avg_ticket_size": 150.0, "refund_ratio": 0.0907, "chargeback_ratio": 0.0355, "settlement_score": 50.46, "bank_inflow_lakhs": 24.16, "seasonality_index": 1.22, "existing_debt_lakhs": 82.71, "dscr": 4.44, "gst_score": 52.27, "website_score": 71.4, "active_days_per_month": 28, "risk_score": 56.17, "risk_grade": "D", "credit_limit_lakhs": 6.97, "recommendation": "Reject / High Risk", "growth_trend": 0.0725}, {"merchant_id": "MER3067", "business_name": "E-commerce Pvt Ltd MER3067", "category": "E-commerce", "entity_type": "LLP", "vintage_months": 6, "monthly_volume_lakhs": 57.36, "avg_ticket_size": 150.0, "refund_ratio": 0.0799, "chargeback_ratio": 0.0246, "settlement_score": 51.8, "bank_inflow_lakhs": 46.47, "seasonality_index": 1.16, "existing_debt_lakhs": 78.06, "dscr": 8.98, "gst_score": 76.16, "website_score": 49.27, "active_days_per_month": 21, "risk_score": 60.66, "risk_grade": "C", "credit_limit_lakhs": 57.36, "recommendation": "Manual Review - Conditional", "growth_trend": 0.0817}, {"merchant_id": "MER3068", "business_name": "Financial Services Pvt Ltd MER3068", "category": "Financial Services", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 155.13, "avg_ticket_size": 150.0, "refund_ratio": 0.0045, "chargeback_ratio": 0.0198, "settlement_score": 81.43, "bank_inflow_lakhs": 187.73, "seasonality_index": 0.74, "existing_debt_lakhs": 188.46, "dscr": 16.35, "gst_score": 48.48, "website_score": 60.54, "active_days_per_month": 16, "risk_score": 91.85, "risk_grade": "B", "credit_limit_lakhs": 310.26, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1023}, {"merchant_id": "MER3069", "business_name": "EdTech Pvt Ltd MER3069", "category": "EdTech", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 28.86, "avg_ticket_size": 153.71, "refund_ratio": 0.1351, "chargeback_ratio": 0.0169, "settlement_score": 93.77, "bank_inflow_lakhs": 21.69, "seasonality_index": 1.52, "existing_debt_lakhs": 33.79, "dscr": 8.2, "gst_score": 50.92, "website_score": 47.69, "active_days_per_month": 13, "risk_score": 61.4, "risk_grade": "C", "credit_limit_lakhs": 28.86, "recommendation": "Manual Review - Conditional", "growth_trend": 0.0426}, {"merchant_id": "MER3070", "business_name": "Food & Beverage Pvt Ltd MER3070", "category": "Food & Beverage", "entity_type": "Private Limited", "vintage_months": 6, "monthly_volume_lakhs": 15.14, "avg_ticket_size": 150.0, "refund_ratio": 0.0331, "chargeback_ratio": 0.0132, "settlement_score": 52.56, "bank_inflow_lakhs": 14.72, "seasonality_index": 1.17, "existing_debt_lakhs": 23.69, "dscr": 7.12, "gst_score": 57.82, "website_score": 56.06, "active_days_per_month": 24, "risk_score": 70.43, "risk_grade": "A", "credit_limit_lakhs": 45.42, "recommendation": "Manual Review - Likely Approve", "growth_trend": -0.0119}, {"merchant_id": "MER3071", "business_name": "E-commerce Pvt Ltd MER3071", "category": "E-commerce", "entity_type": "Proprietorship", "vintage_months": 12, "monthly_volume_lakhs": 88.2, "avg_ticket_size": 388.57, "refund_ratio": 0.096, "chargeback_ratio": 0.0176, "settlement_score": 67.96, "bank_inflow_lakhs": 68.07, "seasonality_index": 1.36, "existing_debt_lakhs": 304.91, "dscr": 3.75, "gst_score": 64.88, "website_score": 28.77, "active_days_per_month": 17, "risk_score": 70.11, "risk_grade": "C", "credit_limit_lakhs": 82.69, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1446}, {"merchant_id": "MER3072", "business_name": "Gaming Pvt Ltd MER3072", "category": "Gaming", "entity_type": "Partnership", "vintage_months": 24, "monthly_volume_lakhs": 24.27, "avg_ticket_size": 150.0, "refund_ratio": 0.0237, "chargeback_ratio": 0.0302, "settlement_score": 45.87, "bank_inflow_lakhs": 28.41, "seasonality_index": 0.99, "existing_debt_lakhs": 18.4, "dscr": 16.09, "gst_score": 85.84, "website_score": 44.88, "active_days_per_month": 22, "risk_score": 72.71, "risk_grade": "B", "credit_limit_lakhs": 48.54, "recommendation": "Manual Review - Conditional", "growth_trend": 0.0856}, {"merchant_id": "MER3073", "business_name": "SaaS Pvt Ltd MER3073", "category": "SaaS", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 39.03, "avg_ticket_size": 150.0, "refund_ratio": 0.0286, "chargeback_ratio": 0.0046, "settlement_score": 76.24, "bank_inflow_lakhs": 45.16, "seasonality_index": 0.95, "existing_debt_lakhs": 144.21, "dscr": 5.04, "gst_score": 58.79, "website_score": 55.47, "active_days_per_month": 21, "risk_score": 93.83, "risk_grade": "A", "credit_limit_lakhs": 117.09, "recommendation": "Auto-Approve", "growth_trend": 0.1167}, {"merchant_id": "MER3074", "business_name": "Financial Services Pvt Ltd MER3074", "category": "Financial Services", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 53.53, "avg_ticket_size": 255.83, "refund_ratio": 0.0456, "chargeback_ratio": 0.017, "settlement_score": 64.92, "bank_inflow_lakhs": 41.33, "seasonality_index": 0.78, "existing_debt_lakhs": 194.88, "dscr": 3.49, "gst_score": 59.21, "website_score": 54.43, "active_days_per_month": 26, "risk_score": 88.89, "risk_grade": "A", "credit_limit_lakhs": 140.11, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0926}, {"merchant_id": "MER3075", "business_name": "Retail Pvt Ltd MER3075", "category": "Retail", "entity_type": "Partnership", "vintage_months": 48, "monthly_volume_lakhs": 34.41, "avg_ticket_size": 150.0, "refund_ratio": 0.1165, "chargeback_ratio": 0.0187, "settlement_score": 76.99, "bank_inflow_lakhs": 27.87, "seasonality_index": 1.61, "existing_debt_lakhs": 78.0, "dscr": 5.39, "gst_score": 51.94, "website_score": 72.84, "active_days_per_month": 28, "risk_score": 64.49, "risk_grade": "D", "credit_limit_lakhs": 10.32, "recommendation": "Reject / High Risk", "growth_trend": 0.0208}, {"merchant_id": "MER3076", "business_name": "Logistics Pvt Ltd MER3076", "category": "Logistics", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 50.09, "avg_ticket_size": 266.66, "refund_ratio": 0.0226, "chargeback_ratio": 0.017, "settlement_score": 82.01, "bank_inflow_lakhs": 52.26, "seasonality_index": 1.15, "existing_debt_lakhs": 158.27, "dscr": 5.36, "gst_score": 60.48, "website_score": 37.06, "active_days_per_month": 16, "risk_score": 82.71, "risk_grade": "C", "credit_limit_lakhs": 50.09, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1556}, {"merchant_id": "MER3077", "business_name": "Food & Beverage Pvt Ltd MER3077", "category": "Food & Beverage", "entity_type": "Proprietorship", "vintage_months": 12, "monthly_volume_lakhs": 19.16, "avg_ticket_size": 150.0, "refund_ratio": 0.0184, "chargeback_ratio": 0.008, "settlement_score": 49.35, "bank_inflow_lakhs": 19.23, "seasonality_index": 1.17, "existing_debt_lakhs": 56.71, "dscr": 4.86, "gst_score": 69.5, "website_score": 37.41, "active_days_per_month": 15, "risk_score": 79.19, "risk_grade": "C", "credit_limit_lakhs": 19.16, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1166}, {"merchant_id": "MER3078", "business_name": "Logistics Pvt Ltd MER3078", "category": "Logistics", "entity_type": "Partnership", "vintage_months": 12, "monthly_volume_lakhs": 51.33, "avg_ticket_size": 150.0, "refund_ratio": 0.0184, "chargeback_ratio": 0.0068, "settlement_score": 72.35, "bank_inflow_lakhs": 48.55, "seasonality_index": 0.82, "existing_debt_lakhs": 98.48, "dscr": 7.66, "gst_score": 53.76, "website_score": 37.79, "active_days_per_month": 26, "risk_score": 88.61, "risk_grade": "A", "credit_limit_lakhs": 153.99, "recommendation": "Auto-Approve", "growth_trend": 0.0597}, {"merchant_id": "MER3079", "business_name": "EdTech Pvt Ltd MER3079", "category": "EdTech", "entity_type": "Private Limited", "vintage_months": 12, "monthly_volume_lakhs": 27.59, "avg_ticket_size": 150.0, "refund_ratio": 0.1223, "chargeback_ratio": 0.0321, "settlement_score": 70.82, "bank_inflow_lakhs": 30.6, "seasonality_index": 1.92, "existing_debt_lakhs": 74.89, "dscr": 6.13, "gst_score": 74.85, "website_score": 55.35, "active_days_per_month": 27, "risk_score": 50.54, "risk_grade": "D", "credit_limit_lakhs": 8.28, "recommendation": "Reject / High Risk", "growth_trend": 0.065}, {"merchant_id": "MER3080", "business_name": "SaaS Pvt Ltd MER3080", "category": "SaaS", "entity_type": "LLP", "vintage_months": 18, "monthly_volume_lakhs": 22.49, "avg_ticket_size": 150.0, "refund_ratio": 0.0404, "chargeback_ratio": 0.0109, "settlement_score": 55.98, "bank_inflow_lakhs": 19.19, "seasonality_index": 1.14, "existing_debt_lakhs": 78.09, "dscr": 3.71, "gst_score": 72.58, "website_score": 51.63, "active_days_per_month": 19, "risk_score": 81.95, "risk_grade": "C", "credit_limit_lakhs": 20.86, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1237}, {"merchant_id": "MER3081", "business_name": "Logistics Pvt Ltd MER3081", "category": "Logistics", "entity_type": "Proprietorship", "vintage_months": 18, "monthly_volume_lakhs": 30.9, "avg_ticket_size": 150.0, "refund_ratio": 0.0325, "chargeback_ratio": 0.0167, "settlement_score": 82.71, "bank_inflow_lakhs": 38.34, "seasonality_index": 1.09, "existing_debt_lakhs": 57.8, "dscr": 9.54, "gst_score": 72.3, "website_score": 51.71, "active_days_per_month": 13, "risk_score": 80.79, "risk_grade": "C", "credit_limit_lakhs": 30.9, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1402}, {"merchant_id": "MER3082", "business_name": "Logistics Pvt Ltd MER3082", "category": "Logistics", "entity_type": "Partnership", "vintage_months": 6, "monthly_volume_lakhs": 26.48, "avg_ticket_size": 150.0, "refund_ratio": 0.0825, "chargeback_ratio": 0.0118, "settlement_score": 74.31, "bank_inflow_lakhs": 21.22, "seasonality_index": 0.95, "existing_debt_lakhs": 37.15, "dscr": 7.48, "gst_score": 26.35, "website_score": 42.64, "active_days_per_month": 16, "risk_score": 66.46, "risk_grade": "C", "credit_limit_lakhs": 26.48, "recommendation": "Manual Review - Conditional", "growth_trend": 0.0875}, {"merchant_id": "MER3083", "business_name": "Gaming Pvt Ltd MER3083", "category": "Gaming", "entity_type": "Partnership", "vintage_months": 12, "monthly_volume_lakhs": 24.99, "avg_ticket_size": 150.0, "refund_ratio": 0.0748, "chargeback_ratio": 0.05, "settlement_score": 51.61, "bank_inflow_lakhs": 27.48, "seasonality_index": 1.21, "existing_debt_lakhs": 52.48, "dscr": 7.4, "gst_score": 75.07, "website_score": 46.26, "active_days_per_month": 24, "risk_score": 61.36, "risk_grade": "D", "credit_limit_lakhs": 7.5, "recommendation": "Reject / High Risk", "growth_trend": 0.1136}, {"merchant_id": "MER3084", "business_name": "Travel Pvt Ltd MER3084", "category": "Travel", "entity_type": "Proprietorship", "vintage_months": 6, "monthly_volume_lakhs": 35.39, "avg_ticket_size": 181.04, "refund_ratio": 0.1081, "chargeback_ratio": 0.0396, "settlement_score": 68.36, "bank_inflow_lakhs": 28.35, "seasonality_index": 2.63, "existing_debt_lakhs": 42.98, "dscr": 8.94, "gst_score": 69.78, "website_score": 40.54, "active_days_per_month": 13, "risk_score": 43.81, "risk_grade": "D", "credit_limit_lakhs": 10.62, "recommendation": "Reject / High Risk", "growth_trend": 0.1372}, {"merchant_id": "MER3085", "business_name": "Gaming Pvt Ltd MER3085", "category": "Gaming", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 49.3, "avg_ticket_size": 150.0, "refund_ratio": 0.2323, "chargeback_ratio": 0.0178, "settlement_score": 23.03, "bank_inflow_lakhs": 51.73, "seasonality_index": 1.43, "existing_debt_lakhs": 71.98, "dscr": 10.72, "gst_score": 69.73, "website_score": 67.13, "active_days_per_month": 12, "risk_score": 56.08, "risk_grade": "D", "credit_limit_lakhs": 14.79, "recommendation": "Reject / High Risk", "growth_trend": 0.16}, {"merchant_id": "MER3086", "business_name": "Retail Pvt Ltd MER3086", "category": "Retail", "entity_type": "LLP", "vintage_months": 12, "monthly_volume_lakhs": 24.73, "avg_ticket_size": 278.41, "refund_ratio": 0.1065, "chargeback_ratio": 0.0116, "settlement_score": 89.69, "bank_inflow_lakhs": 27.68, "seasonality_index": 1.46, "existing_debt_lakhs": 64.08, "dscr": 6.32, "gst_score": 59.89, "website_score": 69.38, "active_days_per_month": 29, "risk_score": 71.42, "risk_grade": "A", "credit_limit_lakhs": 74.19, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0802}, {"merchant_id": "MER3087", "business_name": "Travel Pvt Ltd MER3087", "category": "Travel", "entity_type": "Private Limited", "vintage_months": 6, "monthly_volume_lakhs": 121.27, "avg_ticket_size": 169.95, "refund_ratio": 0.2018, "chargeback_ratio": 0.0229, "settlement_score": 49.32, "bank_inflow_lakhs": 130.24, "seasonality_index": 2.33, "existing_debt_lakhs": 332.33, "dscr": 6.61, "gst_score": 68.47, "website_score": 45.16, "active_days_per_month": 20, "risk_score": 51.06, "risk_grade": "D", "credit_limit_lakhs": 36.38, "recommendation": "Reject / High Risk", "growth_trend": 0.0344}, {"merchant_id": "MER3088", "business_name": "Gaming Pvt Ltd MER3088", "category": "Gaming", "entity_type": "LLP", "vintage_months": 18, "monthly_volume_lakhs": 23.45, "avg_ticket_size": 150.0, "refund_ratio": 0.1333, "chargeback_ratio": 0.0294, "settlement_score": 65.33, "bank_inflow_lakhs": 22.94, "seasonality_index": 0.93, "existing_debt_lakhs": 37.46, "dscr": 8.04, "gst_score": 90.85, "website_score": 76.72, "active_days_per_month": 17, "risk_score": 63.93, "risk_grade": "C", "credit_limit_lakhs": 23.45, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1581}, {"merchant_id": "MER3089", "business_name": "Gaming Pvt Ltd MER3089", "category": "Gaming", "entity_type": "LLP", "vintage_months": 6, "monthly_volume_lakhs": 18.65, "avg_ticket_size": 150.0, "refund_ratio": 0.0545, "chargeback_ratio": 0.0326, "settlement_score": 44.45, "bank_inflow_lakhs": 14.68, "seasonality_index": 0.98, "existing_debt_lakhs": 30.91, "dscr": 5.92, "gst_score": 46.75, "website_score": 51.66, "active_days_per_month": 21, "risk_score": 61.8, "risk_grade": "C", "credit_limit_lakhs": 18.65, "recommendation": "Manual Review - Conditional", "growth_trend": 0.2399}, {"merchant_id": "MER3090", "business_name": "Logistics Pvt Ltd MER3090", "category": "Logistics", "entity_type": "Proprietorship", "vintage_months": 36, "monthly_volume_lakhs": 58.74, "avg_ticket_size": 150.0, "refund_ratio": 0.0367, "chargeback_ratio": 0.0139, "settlement_score": 49.68, "bank_inflow_lakhs": 72.47, "seasonality_index": 1.23, "existing_debt_lakhs": 112.05, "dscr": 10.18, "gst_score": 74.51, "website_score": 26.24, "active_days_per_month": 15, "risk_score": 81.23, "risk_grade": "B", "credit_limit_lakhs": 117.48, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1137}, {"merchant_id": "MER3091", "business_name": "Retail Pvt Ltd MER3091", "category": "Retail", "entity_type": "Partnership", "vintage_months": 6, "monthly_volume_lakhs": 43.74, "avg_ticket_size": 235.08, "refund_ratio": 0.0591, "chargeback_ratio": 0.0155, "settlement_score": 69.01, "bank_inflow_lakhs": 48.71, "seasonality_index": 1.58, "existing_debt_lakhs": 172.32, "dscr": 4.61, "gst_score": 55.78, "website_score": 75.94, "active_days_per_month": 29, "risk_score": 68.47, "risk_grade": "A", "credit_limit_lakhs": 131.22, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0457}, {"merchant_id": "MER3092", "business_name": "Retail Pvt Ltd MER3092", "category": "Retail", "entity_type": "Partnership", "vintage_months": 24, "monthly_volume_lakhs": 44.11, "avg_ticket_size": 150.0, "refund_ratio": 0.1208, "chargeback_ratio": 0.0448, "settlement_score": 33.28, "bank_inflow_lakhs": 44.47, "seasonality_index": 1.48, "existing_debt_lakhs": 79.68, "dscr": 8.44, "gst_score": 72.41, "website_score": 23.29, "active_days_per_month": 19, "risk_score": 47.46, "risk_grade": "D", "credit_limit_lakhs": 13.23, "recommendation": "Reject / High Risk", "growth_trend": 0.0913}, {"merchant_id": "MER3093", "business_name": "EdTech Pvt Ltd MER3093", "category": "EdTech", "entity_type": "Private Limited", "vintage_months": 12, "monthly_volume_lakhs": 10.8, "avg_ticket_size": 193.16, "refund_ratio": 0.0781, "chargeback_ratio": 0.0152, "settlement_score": 63.38, "bank_inflow_lakhs": 13.24, "seasonality_index": 1.84, "existing_debt_lakhs": 37.08, "dscr": 4.67, "gst_score": 70.42, "website_score": 73.42, "active_days_per_month": 13, "risk_score": 65.29, "risk_grade": "C", "credit_limit_lakhs": 10.8, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1446}, {"merchant_id": "MER3094", "business_name": "Travel Pvt Ltd MER3094", "category": "Travel", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 78.27, "avg_ticket_size": 150.0, "refund_ratio": 0.0537, "chargeback_ratio": 0.0245, "settlement_score": 70.88, "bank_inflow_lakhs": 86.86, "seasonality_index": 2.21, "existing_debt_lakhs": 173.31, "dscr": 8.18, "gst_score": 74.08, "website_score": 48.94, "active_days_per_month": 16, "risk_score": 69.92, "risk_grade": "B", "credit_limit_lakhs": 156.54, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0936}, {"merchant_id": "MER3095", "business_name": "Travel Pvt Ltd MER3095", "category": "Travel", "entity_type": "Partnership", "vintage_months": 36, "monthly_volume_lakhs": 51.19, "avg_ticket_size": 150.0, "refund_ratio": 0.1288, "chargeback_ratio": 0.0266, "settlement_score": 56.83, "bank_inflow_lakhs": 57.16, "seasonality_index": 2.62, "existing_debt_lakhs": 76.33, "dscr": 11.26, "gst_score": 81.37, "website_score": 71.25, "active_days_per_month": 21, "risk_score": 53.24, "risk_grade": "D", "credit_limit_lakhs": 15.36, "recommendation": "Reject / High Risk", "growth_trend": 0.0486}, {"merchant_id": "MER3096", "business_name": "E-commerce Pvt Ltd MER3096", "category": "E-commerce", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 96.11, "avg_ticket_size": 150.0, "refund_ratio": 0.0765, "chargeback_ratio": 0.015, "settlement_score": 47.09, "bank_inflow_lakhs": 119.97, "seasonality_index": 1.22, "existing_debt_lakhs": 155.61, "dscr": 12.49, "gst_score": 73.6, "website_score": 51.42, "active_days_per_month": 21, "risk_score": 78.8, "risk_grade": "B", "credit_limit_lakhs": 192.22, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0598}, {"merchant_id": "MER3097", "business_name": "E-commerce Pvt Ltd MER3097", "category": "E-commerce", "entity_type": "LLP", "vintage_months": 24, "monthly_volume_lakhs": 40.01, "avg_ticket_size": 150.0, "refund_ratio": 0.0538, "chargeback_ratio": 0.0295, "settlement_score": 53.22, "bank_inflow_lakhs": 32.89, "seasonality_index": 1.4, "existing_debt_lakhs": 81.56, "dscr": 6.12, "gst_score": 75.72, "website_score": 61.21, "active_days_per_month": 21, "risk_score": 71.0, "risk_grade": "C", "credit_limit_lakhs": 40.01, "recommendation": "Manual Review - Conditional", "growth_trend": 0.202}, {"merchant_id": "MER3098", "business_name": "Food & Beverage Pvt Ltd MER3098", "category": "Food & Beverage", "entity_type": "Private Limited", "vintage_months": 12, "monthly_volume_lakhs": 22.08, "avg_ticket_size": 150.0, "refund_ratio": 0.0598, "chargeback_ratio": 0.0126, "settlement_score": 62.95, "bank_inflow_lakhs": 27.39, "seasonality_index": 1.46, "existing_debt_lakhs": 59.55, "dscr": 6.65, "gst_score": 29.55, "website_score": 35.17, "active_days_per_month": 18, "risk_score": 68.86, "risk_grade": "C", "credit_limit_lakhs": 22.08, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1231}, {"merchant_id": "MER3099", "business_name": "Financial Services Pvt Ltd MER3099", "category": "Financial Services", "entity_type": "Partnership", "vintage_months": 36, "monthly_volume_lakhs": 76.21, "avg_ticket_size": 150.0, "refund_ratio": 0.0241, "chargeback_ratio": 0.0286, "settlement_score": 69.94, "bank_inflow_lakhs": 74.5, "seasonality_index": 0.81, "existing_debt_lakhs": 78.52, "dscr": 14.32, "gst_score": 63.58, "website_score": 50.98, "active_days_per_month": 27, "risk_score": 84.72, "risk_grade": "B", "credit_limit_lakhs": 152.42, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.127}, {"merchant_id": "MER3100", "business_name": "Logistics Pvt Ltd MER3100", "category": "Logistics", "entity_type": "Partnership", "vintage_months": 24, "monthly_volume_lakhs": 54.96, "avg_ticket_size": 223.19, "refund_ratio": 0.044, "chargeback_ratio": 0.0087, "settlement_score": 72.57, "bank_inflow_lakhs": 48.35, "seasonality_index": 1.2, "existing_debt_lakhs": 168.63, "dscr": 4.67, "gst_score": 70.92, "website_score": 82.37, "active_days_per_month": 26, "risk_score": 90.35, "risk_grade": "A", "credit_limit_lakhs": 164.88, "recommendation": "Auto-Approve", "growth_trend": 0.0518}, {"merchant_id": "MER3101", "business_name": "Gaming Pvt Ltd MER3101", "category": "Gaming", "entity_type": "LLP", "vintage_months": 6, "monthly_volume_lakhs": 33.55, "avg_ticket_size": 150.0, "refund_ratio": 0.0985, "chargeback_ratio": 0.0235, "settlement_score": 59.78, "bank_inflow_lakhs": 39.45, "seasonality_index": 0.94, "existing_debt_lakhs": 118.24, "dscr": 5.28, "gst_score": 64.56, "website_score": 31.35, "active_days_per_month": 13, "risk_score": 59.63, "risk_grade": "C", "credit_limit_lakhs": 33.55, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1093}, {"merchant_id": "MER3102", "business_name": "Logistics Pvt Ltd MER3102", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 6, "monthly_volume_lakhs": 74.17, "avg_ticket_size": 150.0, "refund_ratio": 0.0323, "chargeback_ratio": 0.0053, "settlement_score": 95.61, "bank_inflow_lakhs": 85.5, "seasonality_index": 0.84, "existing_debt_lakhs": 219.21, "dscr": 6.46, "gst_score": 63.14, "website_score": 41.27, "active_days_per_month": 28, "risk_score": 97.9, "risk_grade": "A", "credit_limit_lakhs": 222.51, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1134}, {"merchant_id": "MER3103", "business_name": "Healthcare Pvt Ltd MER3103", "category": "Healthcare", "entity_type": "LLP", "vintage_months": 48, "monthly_volume_lakhs": 15.85, "avg_ticket_size": 150.0, "refund_ratio": 0.0318, "chargeback_ratio": 0.008, "settlement_score": 74.23, "bank_inflow_lakhs": 17.41, "seasonality_index": 0.8, "existing_debt_lakhs": 32.01, "dscr": 6.85, "gst_score": 77.55, "website_score": 36.91, "active_days_per_month": 18, "risk_score": 91.64, "risk_grade": "A", "credit_limit_lakhs": 47.55, "recommendation": "Auto-Approve", "growth_trend": 0.0744}, {"merchant_id": "MER3104", "business_name": "EdTech Pvt Ltd MER3104", "category": "EdTech", "entity_type": "Proprietorship", "vintage_months": 36, "monthly_volume_lakhs": 19.71, "avg_ticket_size": 150.0, "refund_ratio": 0.0897, "chargeback_ratio": 0.0347, "settlement_score": 65.4, "bank_inflow_lakhs": 20.71, "seasonality_index": 1.9, "existing_debt_lakhs": 12.04, "dscr": 14.77, "gst_score": 74.49, "website_score": 59.68, "active_days_per_month": 20, "risk_score": 57.26, "risk_grade": "D", "credit_limit_lakhs": 5.91, "recommendation": "Reject / High Risk", "growth_trend": 0.1493}, {"merchant_id": "MER3105", "business_name": "Travel Pvt Ltd MER3105", "category": "Travel", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 69.78, "avg_ticket_size": 150.0, "refund_ratio": 0.0413, "chargeback_ratio": 0.0533, "settlement_score": 58.35, "bank_inflow_lakhs": 83.78, "seasonality_index": 2.76, "existing_debt_lakhs": 65.34, "dscr": 18.84, "gst_score": 90.01, "website_score": 42.74, "active_days_per_month": 26, "risk_score": 58.08, "risk_grade": "D", "credit_limit_lakhs": 20.93, "recommendation": "Reject / High Risk", "growth_trend": -0.0486}, {"merchant_id": "MER3106", "business_name": "Logistics Pvt Ltd MER3106", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 46.66, "avg_ticket_size": 150.0, "refund_ratio": 0.0421, "chargeback_ratio": 0.0121, "settlement_score": 76.03, "bank_inflow_lakhs": 56.29, "seasonality_index": 1.11, "existing_debt_lakhs": 50.52, "dscr": 15.63, "gst_score": 78.77, "website_score": 78.88, "active_days_per_month": 28, "risk_score": 96.73, "risk_grade": "B", "credit_limit_lakhs": 93.32, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1162}, {"merchant_id": "MER3107", "business_name": "Logistics Pvt Ltd MER3107", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 12, "monthly_volume_lakhs": 33.79, "avg_ticket_size": 150.0, "refund_ratio": 0.0257, "chargeback_ratio": 0.0108, "settlement_score": 60.63, "bank_inflow_lakhs": 29.91, "seasonality_index": 1.17, "existing_debt_lakhs": 93.39, "dscr": 4.94, "gst_score": 63.38, "website_score": 52.6, "active_days_per_month": 27, "risk_score": 86.87, "risk_grade": "A", "credit_limit_lakhs": 101.37, "recommendation": "Auto-Approve", "growth_trend": 0.1421}, {"merchant_id": "MER3108", "business_name": "Gaming Pvt Ltd MER3108", "category": "Gaming", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 39.26, "avg_ticket_size": 150.0, "refund_ratio": 0.2262, "chargeback_ratio": 0.0566, "settlement_score": 58.05, "bank_inflow_lakhs": 43.73, "seasonality_index": 1.28, "existing_debt_lakhs": 24.62, "dscr": 20.62, "gst_score": 61.83, "website_score": 57.77, "active_days_per_month": 20, "risk_score": 53.74, "risk_grade": "D", "credit_limit_lakhs": 11.78, "recommendation": "Reject / High Risk", "growth_trend": 0.0825}, {"merchant_id": "MER3109", "business_name": "Logistics Pvt Ltd MER3109", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 74.07, "avg_ticket_size": 150.0, "refund_ratio": 0.058, "chargeback_ratio": 0.0152, "settlement_score": 77.96, "bank_inflow_lakhs": 57.21, "seasonality_index": 1.07, "existing_debt_lakhs": 114.05, "dscr": 7.91, "gst_score": 55.0, "website_score": 69.82, "active_days_per_month": 21, "risk_score": 87.13, "risk_grade": "A", "credit_limit_lakhs": 222.21, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0172}, {"merchant_id": "MER3110", "business_name": "Retail Pvt Ltd MER3110", "category": "Retail", "entity_type": "Proprietorship", "vintage_months": 48, "monthly_volume_lakhs": 35.78, "avg_ticket_size": 150.0, "refund_ratio": 0.0405, "chargeback_ratio": 0.0166, "settlement_score": 80.46, "bank_inflow_lakhs": 40.49, "seasonality_index": 1.37, "existing_debt_lakhs": 25.38, "dscr": 18.7, "gst_score": 37.02, "website_score": 47.86, "active_days_per_month": 18, "risk_score": 76.27, "risk_grade": "B", "credit_limit_lakhs": 71.56, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0716}, {"merchant_id": "MER3111", "business_name": "Gaming Pvt Ltd MER3111", "category": "Gaming", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 44.17, "avg_ticket_size": 150.0, "refund_ratio": 0.1278, "chargeback_ratio": 0.0356, "settlement_score": 61.62, "bank_inflow_lakhs": 35.28, "seasonality_index": 1.23, "existing_debt_lakhs": 140.61, "dscr": 4.03, "gst_score": 78.15, "website_score": 56.43, "active_days_per_month": 13, "risk_score": 65.19, "risk_grade": "C", "credit_limit_lakhs": 44.17, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1391}, {"merchant_id": "MER3112", "business_name": "E-commerce Pvt Ltd MER3112", "category": "E-commerce", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 24.98, "avg_ticket_size": 211.65, "refund_ratio": 0.0713, "chargeback_ratio": 0.0243, "settlement_score": 40.83, "bank_inflow_lakhs": 25.12, "seasonality_index": 1.52, "existing_debt_lakhs": 70.78, "dscr": 5.28, "gst_score": 85.65, "website_score": 62.6, "active_days_per_month": 24, "risk_score": 66.2, "risk_grade": "D", "credit_limit_lakhs": 7.49, "recommendation": "Reject / High Risk", "growth_trend": 0.0746}, {"merchant_id": "MER3113", "business_name": "Travel Pvt Ltd MER3113", "category": "Travel", "entity_type": "Partnership", "vintage_months": 24, "monthly_volume_lakhs": 68.97, "avg_ticket_size": 150.0, "refund_ratio": 0.0825, "chargeback_ratio": 0.0294, "settlement_score": 42.21, "bank_inflow_lakhs": 63.04, "seasonality_index": 2.7, "existing_debt_lakhs": 174.89, "dscr": 5.89, "gst_score": 95.54, "website_score": 47.33, "active_days_per_month": 28, "risk_score": 56.22, "risk_grade": "D", "credit_limit_lakhs": 20.69, "recommendation": "Reject / High Risk", "growth_trend": 0.0277}, {"merchant_id": "MER3114", "business_name": "Healthcare Pvt Ltd MER3114", "category": "Healthcare", "entity_type": "Partnership", "vintage_months": 12, "monthly_volume_lakhs": 17.49, "avg_ticket_size": 161.12, "refund_ratio": 0.0231, "chargeback_ratio": 0.0029, "settlement_score": 61.52, "bank_inflow_lakhs": 16.19, "seasonality_index": 0.86, "existing_debt_lakhs": 57.79, "dscr": 4.03, "gst_score": 80.08, "website_score": 68.7, "active_days_per_month": 12, "risk_score": 86.49, "risk_grade": "A", "credit_limit_lakhs": 52.47, "recommendation": "Auto-Approve", "growth_trend": 0.0176}, {"merchant_id": "MER3115", "business_name": "Logistics Pvt Ltd MER3115", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 48, "monthly_volume_lakhs": 51.66, "avg_ticket_size": 150.0, "refund_ratio": 0.0425, "chargeback_ratio": 0.01, "settlement_score": 62.77, "bank_inflow_lakhs": 45.47, "seasonality_index": 1.2, "existing_debt_lakhs": 137.35, "dscr": 5.31, "gst_score": 77.25, "website_score": 74.06, "active_days_per_month": 23, "risk_score": 92.23, "risk_grade": "A", "credit_limit_lakhs": 154.98, "recommendation": "Auto-Approve", "growth_trend": 0.0505}, {"merchant_id": "MER3116", "business_name": "SaaS Pvt Ltd MER3116", "category": "SaaS", "entity_type": "Proprietorship", "vintage_months": 12, "monthly_volume_lakhs": 17.86, "avg_ticket_size": 150.0, "refund_ratio": 0.0304, "chargeback_ratio": 0.0087, "settlement_score": 74.64, "bank_inflow_lakhs": 17.02, "seasonality_index": 0.82, "existing_debt_lakhs": 35.3, "dscr": 6.23, "gst_score": 81.84, "website_score": 79.25, "active_days_per_month": 21, "risk_score": 88.53, "risk_grade": "A", "credit_limit_lakhs": 53.58, "recommendation": "Auto-Approve", "growth_trend": 0.1243}, {"merchant_id": "MER3117", "business_name": "Logistics Pvt Ltd MER3117", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 27.01, "avg_ticket_size": 157.1, "refund_ratio": 0.0779, "chargeback_ratio": 0.0122, "settlement_score": 73.69, "bank_inflow_lakhs": 29.84, "seasonality_index": 1.26, "existing_debt_lakhs": 35.18, "dscr": 10.95, "gst_score": 51.28, "website_score": 50.53, "active_days_per_month": 20, "risk_score": 79.98, "risk_grade": "A", "credit_limit_lakhs": 81.03, "recommendation": "Auto-Approve", "growth_trend": 0.125}, {"merchant_id": "MER3118", "business_name": "Gaming Pvt Ltd MER3118", "category": "Gaming", "entity_type": "Partnership", "vintage_months": 18, "monthly_volume_lakhs": 29.77, "avg_ticket_size": 283.23, "refund_ratio": 0.208, "chargeback_ratio": 0.0469, "settlement_score": 52.85, "bank_inflow_lakhs": 25.93, "seasonality_index": 1.41, "existing_debt_lakhs": 48.1, "dscr": 7.49, "gst_score": 74.01, "website_score": 68.7, "active_days_per_month": 29, "risk_score": 52.85, "risk_grade": "D", "credit_limit_lakhs": 8.93, "recommendation": "Reject / High Risk", "growth_trend": 0.0473}, {"merchant_id": "MER3119", "business_name": "Travel Pvt Ltd MER3119", "category": "Travel", "entity_type": "Private Limited", "vintage_months": 48, "monthly_volume_lakhs": 24.22, "avg_ticket_size": 150.0, "refund_ratio": 0.1032, "chargeback_ratio": 0.0254, "settlement_score": 63.54, "bank_inflow_lakhs": 20.01, "seasonality_index": 2.5, "existing_debt_lakhs": 96.73, "dscr": 3.21, "gst_score": 64.77, "website_score": 70.79, "active_days_per_month": 14, "risk_score": 57.16, "risk_grade": "D", "credit_limit_lakhs": 5.83, "recommendation": "Reject / High Risk", "growth_trend": 0.0802}, {"merchant_id": "MER3120", "business_name": "Logistics Pvt Ltd MER3120", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 18, "monthly_volume_lakhs": 42.62, "avg_ticket_size": 150.0, "refund_ratio": 0.0353, "chargeback_ratio": 0.0151, "settlement_score": 44.57, "bank_inflow_lakhs": 39.3, "seasonality_index": 1.29, "existing_debt_lakhs": 146.73, "dscr": 4.32, "gst_score": 59.25, "website_score": 65.98, "active_days_per_month": 28, "risk_score": 83.33, "risk_grade": "A", "credit_limit_lakhs": 127.86, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1327}, {"merchant_id": "MER3121", "business_name": "Food & Beverage Pvt Ltd MER3121", "category": "Food & Beverage", "entity_type": "Partnership", "vintage_months": 12, "monthly_volume_lakhs": 12.28, "avg_ticket_size": 150.0, "refund_ratio": 0.0238, "chargeback_ratio": 0.0159, "settlement_score": 61.9, "bank_inflow_lakhs": 11.21, "seasonality_index": 1.42, "existing_debt_lakhs": 30.13, "dscr": 4.6, "gst_score": 62.01, "website_score": 79.84, "active_days_per_month": 25, "risk_score": 70.91, "risk_grade": "A", "credit_limit_lakhs": 36.84, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.018}, {"merchant_id": "MER3122", "business_name": "Retail Pvt Ltd MER3122", "category": "Retail", "entity_type": "LLP", "vintage_months": 48, "monthly_volume_lakhs": 21.76, "avg_ticket_size": 150.0, "refund_ratio": 0.0392, "chargeback_ratio": 0.023, "settlement_score": 53.19, "bank_inflow_lakhs": 22.94, "seasonality_index": 1.06, "existing_debt_lakhs": 14.46, "dscr": 14.89, "gst_score": 58.08, "website_score": 40.17, "active_days_per_month": 14, "risk_score": 71.5, "risk_grade": "B", "credit_limit_lakhs": 43.52, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0485}, {"merchant_id": "MER3123", "business_name": "Logistics Pvt Ltd MER3123", "category": "Logistics", "entity_type": "LLP", "vintage_months": 36, "monthly_volume_lakhs": 35.96, "avg_ticket_size": 150.0, "refund_ratio": 0.091, "chargeback_ratio": 0.0276, "settlement_score": 37.41, "bank_inflow_lakhs": 32.42, "seasonality_index": 1.01, "existing_debt_lakhs": 68.28, "dscr": 7.02, "gst_score": 46.69, "website_score": 53.99, "active_days_per_month": 17, "risk_score": 56.71, "risk_grade": "D", "credit_limit_lakhs": 10.79, "recommendation": "Reject / High Risk", "growth_trend": -0.0257}, {"merchant_id": "MER3124", "business_name": "SaaS Pvt Ltd MER3124", "category": "SaaS", "entity_type": "Proprietorship", "vintage_months": 6, "monthly_volume_lakhs": 30.59, "avg_ticket_size": 150.0, "refund_ratio": 0.051, "chargeback_ratio": 0.0085, "settlement_score": 66.87, "bank_inflow_lakhs": 23.84, "seasonality_index": 0.83, "existing_debt_lakhs": 32.95, "dscr": 9.18, "gst_score": 45.35, "website_score": 44.42, "active_days_per_month": 22, "risk_score": 77.79, "risk_grade": "A", "credit_limit_lakhs": 91.77, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1063}, {"merchant_id": "MER3125", "business_name": "Travel Pvt Ltd MER3125", "category": "Travel", "entity_type": "Proprietorship", "vintage_months": 18, "monthly_volume_lakhs": 35.43, "avg_ticket_size": 150.0, "refund_ratio": 0.1328, "chargeback_ratio": 0.0536, "settlement_score": 67.84, "bank_inflow_lakhs": 43.31, "seasonality_index": 1.95, "existing_debt_lakhs": 99.92, "dscr": 6.74, "gst_score": 81.26, "website_score": 35.71, "active_days_per_month": 13, "risk_score": 43.3, "risk_grade": "D", "credit_limit_lakhs": 10.63, "recommendation": "Reject / High Risk", "growth_trend": 0.0661}, {"merchant_id": "MER3126", "business_name": "Logistics Pvt Ltd MER3126", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 37.81, "avg_ticket_size": 150.0, "refund_ratio": 0.0698, "chargeback_ratio": 0.018, "settlement_score": 74.83, "bank_inflow_lakhs": 32.29, "seasonality_index": 0.8, "existing_debt_lakhs": 86.04, "dscr": 5.73, "gst_score": 57.56, "website_score": 71.21, "active_days_per_month": 17, "risk_score": 84.53, "risk_grade": "C", "credit_limit_lakhs": 37.81, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1155}, {"merchant_id": "MER3127", "business_name": "Healthcare Pvt Ltd MER3127", "category": "Healthcare", "entity_type": "Proprietorship", "vintage_months": 12, "monthly_volume_lakhs": 21.36, "avg_ticket_size": 150.0, "refund_ratio": 0.0162, "chargeback_ratio": 0.0066, "settlement_score": 85.02, "bank_inflow_lakhs": 22.5, "seasonality_index": 0.78, "existing_debt_lakhs": 83.51, "dscr": 4.1, "gst_score": 81.67, "website_score": 46.75, "active_days_per_month": 17, "risk_score": 85.62, "risk_grade": "A", "credit_limit_lakhs": 64.08, "recommendation": "Auto-Approve", "growth_trend": 0.0373}, {"merchant_id": "MER3128", "business_name": "SaaS Pvt Ltd MER3128", "category": "SaaS", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 26.32, "avg_ticket_size": 150.0, "refund_ratio": 0.0371, "chargeback_ratio": 0.0149, "settlement_score": 68.26, "bank_inflow_lakhs": 27.29, "seasonality_index": 1.05, "existing_debt_lakhs": 103.38, "dscr": 4.12, "gst_score": 60.17, "website_score": 44.09, "active_days_per_month": 16, "risk_score": 88.5, "risk_grade": "C", "credit_limit_lakhs": 26.32, "recommendation": "Manual Review - Conditional", "growth_trend": 0.226}, {"merchant_id": "MER3129", "business_name": "EdTech Pvt Ltd MER3129", "category": "EdTech", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 16.74, "avg_ticket_size": 150.0, "refund_ratio": 0.0503, "chargeback_ratio": 0.0448, "settlement_score": 52.36, "bank_inflow_lakhs": 12.57, "seasonality_index": 1.54, "existing_debt_lakhs": 29.42, "dscr": 5.25, "gst_score": 81.81, "website_score": 74.71, "active_days_per_month": 26, "risk_score": 67.67, "risk_grade": "D", "credit_limit_lakhs": 5.02, "recommendation": "Reject / High Risk", "growth_trend": 0.0926}, {"merchant_id": "MER3130", "business_name": "Retail Pvt Ltd MER3130", "category": "Retail", "entity_type": "LLP", "vintage_months": 36, "monthly_volume_lakhs": 46.86, "avg_ticket_size": 150.0, "refund_ratio": 0.0618, "chargeback_ratio": 0.0202, "settlement_score": 50.99, "bank_inflow_lakhs": 46.15, "seasonality_index": 1.48, "existing_debt_lakhs": 98.93, "dscr": 7.25, "gst_score": 70.28, "website_score": 64.04, "active_days_per_month": 21, "risk_score": 71.47, "risk_grade": "B", "credit_limit_lakhs": 93.72, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.078}, {"merchant_id": "MER3131", "business_name": "Food & Beverage Pvt Ltd MER3131", "category": "Food & Beverage", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 16.93, "avg_ticket_size": 223.09, "refund_ratio": 0.0347, "chargeback_ratio": 0.0184, "settlement_score": 64.64, "bank_inflow_lakhs": 13.65, "seasonality_index": 1.04, "existing_debt_lakhs": 32.23, "dscr": 5.34, "gst_score": 34.19, "website_score": 46.79, "active_days_per_month": 23, "risk_score": 77.55, "risk_grade": "A", "credit_limit_lakhs": 50.79, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0381}, {"merchant_id": "MER3132", "business_name": "Logistics Pvt Ltd MER3132", "category": "Logistics", "entity_type": "Private Limited", "vintage_months": 36, "monthly_volume_lakhs": 49.02, "avg_ticket_size": 150.0, "refund_ratio": 0.0346, "chargeback_ratio": 0.0452, "settlement_score": 65.92, "bank_inflow_lakhs": 49.02, "seasonality_index": 0.84, "existing_debt_lakhs": 120.22, "dscr": 6.46, "gst_score": 85.02, "website_score": 45.01, "active_days_per_month": 24, "risk_score": 81.73, "risk_grade": "B", "credit_limit_lakhs": 98.04, "recommendation": "Reject / High Risk", "growth_trend": 0.0831}, {"merchant_id": "MER3133", "business_name": "E-commerce Pvt Ltd MER3133", "category": "E-commerce", "entity_type": "Proprietorship", "vintage_months": 24, "monthly_volume_lakhs": 48.97, "avg_ticket_size": 150.0, "refund_ratio": 0.1617, "chargeback_ratio": 0.0149, "settlement_score": 54.49, "bank_inflow_lakhs": 52.55, "seasonality_index": 1.47, "existing_debt_lakhs": 156.57, "dscr": 5.44, "gst_score": 71.15, "website_score": 57.67, "active_days_per_month": 20, "risk_score": 58.96, "risk_grade": "D", "credit_limit_lakhs": 14.69, "recommendation": "Reject / High Risk", "growth_trend": 0.0144}, {"merchant_id": "MER3134", "business_name": "SaaS Pvt Ltd MER3134", "category": "SaaS", "entity_type": "Partnership", "vintage_months": 6, "monthly_volume_lakhs": 40.36, "avg_ticket_size": 150.0, "refund_ratio": 0.0354, "chargeback_ratio": 0.0059, "settlement_score": 87.45, "bank_inflow_lakhs": 32.16, "seasonality_index": 1.13, "existing_debt_lakhs": 73.83, "dscr": 6.52, "gst_score": 44.3, "website_score": 40.3, "active_days_per_month": 20, "risk_score": 80.54, "risk_grade": "A", "credit_limit_lakhs": 121.08, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0984}, {"merchant_id": "MER3135", "business_name": "E-commerce Pvt Ltd MER3135", "category": "E-commerce", "entity_type": "Private Limited", "vintage_months": 48, "monthly_volume_lakhs": 33.61, "avg_ticket_size": 222.93, "refund_ratio": 0.0263, "chargeback_ratio": 0.0245, "settlement_score": 79.32, "bank_inflow_lakhs": 30.24, "seasonality_index": 1.28, "existing_debt_lakhs": 85.69, "dscr": 5.39, "gst_score": 53.48, "website_score": 68.05, "active_days_per_month": 14, "risk_score": 74.85, "risk_grade": "A", "credit_limit_lakhs": 100.83, "recommendation": "Manual Review - Likely Approve", "growth_trend": -0.0007}, {"merchant_id": "MER3136", "business_name": "Logistics Pvt Ltd MER3136", "category": "Logistics", "entity_type": "Partnership", "vintage_months": 18, "monthly_volume_lakhs": 39.76, "avg_ticket_size": 150.0, "refund_ratio": 0.0305, "chargeback_ratio": 0.0209, "settlement_score": 46.42, "bank_inflow_lakhs": 48.64, "seasonality_index": 1.01, "existing_debt_lakhs": 156.08, "dscr": 5.05, "gst_score": 65.13, "website_score": 67.23, "active_days_per_month": 14, "risk_score": 71.38, "risk_grade": "C", "credit_limit_lakhs": 39.76, "recommendation": "Manual Review - Conditional", "growth_trend": 0.0332}, {"merchant_id": "MER3137", "business_name": "Financial Services Pvt Ltd MER3137", "category": "Financial Services", "entity_type": "Partnership", "vintage_months": 18, "monthly_volume_lakhs": 59.29, "avg_ticket_size": 150.0, "refund_ratio": 0.0107, "chargeback_ratio": 0.0378, "settlement_score": 48.49, "bank_inflow_lakhs": 53.36, "seasonality_index": 0.7, "existing_debt_lakhs": 181.14, "dscr": 4.82, "gst_score": 89.64, "website_score": 81.06, "active_days_per_month": 21, "risk_score": 75.9, "risk_grade": "A", "credit_limit_lakhs": 177.87, "recommendation": "Reject / High Risk", "growth_trend": 0.0155}, {"merchant_id": "MER3138", "business_name": "Gaming Pvt Ltd MER3138", "category": "Gaming", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 34.12, "avg_ticket_size": 150.0, "refund_ratio": 0.0783, "chargeback_ratio": 0.0243, "settlement_score": 62.22, "bank_inflow_lakhs": 29.57, "seasonality_index": 0.89, "existing_debt_lakhs": 132.94, "dscr": 3.56, "gst_score": 83.29, "website_score": 66.25, "active_days_per_month": 17, "risk_score": 75.63, "risk_grade": "C", "credit_limit_lakhs": 30.37, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1321}, {"merchant_id": "MER3139", "business_name": "SaaS Pvt Ltd MER3139", "category": "SaaS", "entity_type": "Proprietorship", "vintage_months": 6, "monthly_volume_lakhs": 45.8, "avg_ticket_size": 180.47, "refund_ratio": 0.0395, "chargeback_ratio": 0.011, "settlement_score": 79.16, "bank_inflow_lakhs": 46.85, "seasonality_index": 0.82, "existing_debt_lakhs": 138.63, "dscr": 5.43, "gst_score": 45.96, "website_score": 84.47, "active_days_per_month": 14, "risk_score": 81.16, "risk_grade": "C", "credit_limit_lakhs": 45.8, "recommendation": "Manual Review - Conditional", "growth_trend": 0.1188}, {"merchant_id": "MER3140", "business_name": "Financial Services Pvt Ltd MER3140", "category": "Financial Services", "entity_type": "Partnership", "vintage_months": 6, "monthly_volume_lakhs": 50.8, "avg_ticket_size": 150.0, "refund_ratio": 0.0492, "chargeback_ratio": 0.0174, "settlement_score": 76.31, "bank_inflow_lakhs": 53.92, "seasonality_index": 0.7, "existing_debt_lakhs": 35.75, "dscr": 19.56, "gst_score": 51.65, "website_score": 36.95, "active_days_per_month": 24, "risk_score": 73.17, "risk_grade": "B", "credit_limit_lakhs": 101.6, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0551}, {"merchant_id": "MER3141", "business_name": "EdTech Pvt Ltd MER3141", "category": "EdTech", "entity_type": "Proprietorship", "vintage_months": 12, "monthly_volume_lakhs": 30.43, "avg_ticket_size": 150.0, "refund_ratio": 0.0733, "chargeback_ratio": 0.0336, "settlement_score": 54.2, "bank_inflow_lakhs": 25.86, "seasonality_index": 1.49, "existing_debt_lakhs": 85.21, "dscr": 4.63, "gst_score": 39.2, "website_score": 64.01, "active_days_per_month": 19, "risk_score": 49.54, "risk_grade": "D", "credit_limit_lakhs": 9.13, "recommendation": "Reject / High Risk", "growth_trend": 0.0873}, {"merchant_id": "MER3142", "business_name": "EdTech Pvt Ltd MER3142", "category": "EdTech", "entity_type": "LLP", "vintage_months": 12, "monthly_volume_lakhs": 27.55, "avg_ticket_size": 150.0, "refund_ratio": 0.071, "chargeback_ratio": 0.0315, "settlement_score": 55.03, "bank_inflow_lakhs": 29.09, "seasonality_index": 1.78, "existing_debt_lakhs": 41.4, "dscr": 9.45, "gst_score": 69.85, "website_score": 48.26, "active_days_per_month": 19, "risk_score": 54.81, "risk_grade": "D", "credit_limit_lakhs": 8.27, "recommendation": "Reject / High Risk", "growth_trend": 0.0904}, {"merchant_id": "MER3143", "business_name": "SaaS Pvt Ltd MER3143", "category": "SaaS", "entity_type": "Private Limited", "vintage_months": 18, "monthly_volume_lakhs": 46.03, "avg_ticket_size": 165.6, "refund_ratio": 0.0279, "chargeback_ratio": 0.0197, "settlement_score": 84.1, "bank_inflow_lakhs": 45.32, "seasonality_index": 0.81, "existing_debt_lakhs": 106.91, "dscr": 6.64, "gst_score": 87.2, "website_score": 46.34, "active_days_per_month": 26, "risk_score": 90.13, "risk_grade": "A", "credit_limit_lakhs": 138.09, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1395}, {"merchant_id": "MER3144", "business_name": "Financial Services Pvt Ltd MER3144", "category": "Financial Services", "entity_type": "Private Limited", "vintage_months": 18, "monthly_volume_lakhs": 75.07, "avg_ticket_size": 296.88, "refund_ratio": 0.0428, "chargeback_ratio": 0.0285, "settlement_score": 61.53, "bank_inflow_lakhs": 60.86, "seasonality_index": 0.57, "existing_debt_lakhs": 229.15, "dscr": 4.41, "gst_score": 37.46, "website_score": 72.47, "active_days_per_month": 29, "risk_score": 80.42, "risk_grade": "A", "credit_limit_lakhs": 225.21, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.1249}, {"merchant_id": "MER3145", "business_name": "E-commerce Pvt Ltd MER3145", "category": "E-commerce", "entity_type": "Partnership", "vintage_months": 6, "monthly_volume_lakhs": 86.28, "avg_ticket_size": 150.0, "refund_ratio": 0.0083, "chargeback_ratio": 0.0246, "settlement_score": 50.11, "bank_inflow_lakhs": 81.99, "seasonality_index": 1.32, "existing_debt_lakhs": 82.97, "dscr": 15.03, "gst_score": 41.8, "website_score": 68.93, "active_days_per_month": 22, "risk_score": 70.31, "risk_grade": "B", "credit_limit_lakhs": 172.56, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0618}, {"merchant_id": "MER3146", "business_name": "Gaming Pvt Ltd MER3146", "category": "Gaming", "entity_type": "Private Limited", "vintage_months": 12, "monthly_volume_lakhs": 36.5, "avg_ticket_size": 162.75, "refund_ratio": 0.0909, "chargeback_ratio": 0.0414, "settlement_score": 51.18, "bank_inflow_lakhs": 35.76, "seasonality_index": 1.23, "existing_debt_lakhs": 84.7, "dscr": 6.44, "gst_score": 48.78, "website_score": 54.59, "active_days_per_month": 23, "risk_score": 57.53, "risk_grade": "D", "credit_limit_lakhs": 10.95, "recommendation": "Reject / High Risk", "growth_trend": 0.0978}, {"merchant_id": "MER3147", "business_name": "Travel Pvt Ltd MER3147", "category": "Travel", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 33.67, "avg_ticket_size": 150.0, "refund_ratio": 0.2288, "chargeback_ratio": 0.0352, "settlement_score": 51.78, "bank_inflow_lakhs": 39.23, "seasonality_index": 2.33, "existing_debt_lakhs": 47.64, "dscr": 11.41, "gst_score": 50.8, "website_score": 58.44, "active_days_per_month": 18, "risk_score": 45.98, "risk_grade": "D", "credit_limit_lakhs": 10.1, "recommendation": "Reject / High Risk", "growth_trend": 0.03}, {"merchant_id": "MER3148", "business_name": "Healthcare Pvt Ltd MER3148", "category": "Healthcare", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 39.17, "avg_ticket_size": 150.0, "refund_ratio": 0.0446, "chargeback_ratio": 0.0088, "settlement_score": 71.68, "bank_inflow_lakhs": 43.19, "seasonality_index": 0.84, "existing_debt_lakhs": 101.02, "dscr": 6.66, "gst_score": 93.16, "website_score": 70.56, "active_days_per_month": 22, "risk_score": 97.22, "risk_grade": "A", "credit_limit_lakhs": 117.51, "recommendation": "Auto-Approve", "growth_trend": 0.1268}, {"merchant_id": "MER3149", "business_name": "Food & Beverage Pvt Ltd MER3149", "category": "Food & Beverage", "entity_type": "Private Limited", "vintage_months": 24, "monthly_volume_lakhs": 18.56, "avg_ticket_size": 150.0, "refund_ratio": 0.0453, "chargeback_ratio": 0.0157, "settlement_score": 71.21, "bank_inflow_lakhs": 22.81, "seasonality_index": 1.07, "existing_debt_lakhs": 62.61, "dscr": 5.31, "gst_score": 48.34, "website_score": 66.72, "active_days_per_month": 16, "risk_score": 78.79, "risk_grade": "A", "credit_limit_lakhs": 55.68, "recommendation": "Manual Review - Likely Approve", "growth_trend": 0.0461}];
+const gradeSummary = [{"grade": "A", "count": 55, "avg_score": 84.15, "avg_limit": 114.14, "avg_volume": 38.46}, {"grade": "B", "count": 25, "avg_score": 78.79, "avg_limit": 150.99, "avg_volume": 75.49}, {"grade": "C", "count": 32, "avg_score": 73.45, "avg_limit": 39.53, "avg_volume": 39.98}, {"grade": "D", "count": 38, "avg_score": 55.67, "avg_limit": 11.95, "avg_volume": 40.14}];
+const recSummary = [{"recommendation": "Auto-Approve", "count": 27, "total_limit": 2970.62}, {"recommendation": "Manual Review - Conditional", "count": 37, "total_limit": 1877.15}, {"recommendation": "Manual Review - Likely Approve", "count": 46, "total_limit": 6193.76}, {"recommendation": "Reject / High Risk", "count": 40, "total_limit": 730.13}];
+const catSummary = [{"category": "E-commerce", "count": 11, "avg_risk_score": 70.96, "avg_credit_limit": 101.86, "avg_chargeback": 0.02, "avg_refund": 0.07, "avg_dscr": 8.57}, {"category": "EdTech", "count": 10, "avg_risk_score": 57.27, "avg_credit_limit": 9.65, "avg_chargeback": 0.03, "avg_refund": 0.1, "avg_dscr": 7.02}, {"category": "Financial Services", "count": 15, "avg_risk_score": 81.15, "avg_credit_limit": 154.14, "avg_chargeback": 0.02, "avg_refund": 0.03, "avg_dscr": 10.02}, {"category": "Food & Beverage", "count": 7, "avg_risk_score": 75.36, "avg_credit_limit": 45.61, "avg_chargeback": 0.01, "avg_refund": 0.04, "avg_dscr": 6.92}, {"category": "Gaming", "count": 23, "avg_risk_score": 63.35, "avg_credit_limit": 39.12, "avg_chargeback": 0.03, "avg_refund": 0.11, "avg_dscr": 7.89}, {"category": "Healthcare", "count": 11, "avg_risk_score": 90.6, "avg_credit_limit": 92.83, "avg_chargeback": 0.01, "avg_refund": 0.03, "avg_dscr": 6.12}, {"category": "Logistics", "count": 26, "avg_risk_score": 83.42, "avg_credit_limit": 113.14, "avg_chargeback": 0.01, "avg_refund": 0.04, "avg_dscr": 7.5}, {"category": "Retail", "count": 15, "avg_risk_score": 70.63, "avg_credit_limit": 72.63, "avg_chargeback": 0.02, "avg_refund": 0.07, "avg_dscr": 7.87}, {"category": "SaaS", "count": 17, "avg_risk_score": 87.14, "avg_credit_limit": 93.38, "avg_chargeback": 0.01, "avg_refund": 0.03, "avg_dscr": 6.64}, {"category": "Travel", "count": 15, "avg_risk_score": 53.49, "avg_credit_limit": 25.59, "avg_chargeback": 0.04, "avg_refund": 0.12, "avg_dscr": 8.39}];
+const scoreDist = [{"score_range": "<50", "count": 9}, {"score_range": "50-60", "count": 22}, {"score_range": "60-70", "count": 24}, {"score_range": "70-80", "count": 37}, {"score_range": "80-90", "count": 35}, {"score_range": "90-100", "count": 23}];
+const entitySummary = [{"entity_type": "LLP", "count": 25, "avg_score": 72.34, "avg_limit": 54.38}, {"entity_type": "Partnership", "count": 34, "avg_score": 74.19, "avg_limit": 89.77}, {"entity_type": "Private Limited", "count": 58, "avg_score": 77.12, "avg_limit": 90.78}, {"entity_type": "Proprietorship", "count": 33, "avg_score": 68.5, "avg_limit": 63.48}];
+const overallStats = {"total_merchants": 150, "avg_risk_score": 73.76, "total_credit_exposure": 11771.66, "avg_credit_limit": 78.48, "auto_approve_count": 27, "auto_approve_rate": 18.0, "reject_count": 40, "manual_review_count": 83, "grade_a_count": 55, "grade_d_count": 38, "avg_dscr": 7.76, "avg_refund_ratio": 0.0656, "avg_chargeback_ratio": 0.0221};
+
+let currentPage = 1;
+const pageSize = 15;
+let filteredData = [...merchants];
+let sortCol = 'risk_score';
+let sortAsc = false;
+let activeFilter = 'all';
+
+const gradeColors = {'A': '#22c55e', 'B': '#3b82f6', 'C': '#f59e0b', 'D': '#ef4444'};
+const recColors = {
+  'Auto-Approve': '#22c55e',
+  'Manual Review - Likely Approve': '#3b82f6',
+  'Manual Review - Conditional': '#f59e0b',
+  'Reject / High Risk': '#ef4444'
+};
+
+function init() {
+  renderTable();
+  renderPagination();
+  setupEventListeners();
+  // Delay chart rendering until DOM layout is complete
+  setTimeout(() => {
+    renderGradeChart();
+    renderRecChart();
+    renderCategoryChart();
+    renderScoreChart();
+  }, 100);
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const start = (currentPage - 1) * pageSize;
+  const end = start + pageSize;
+  const pageData = filteredData.slice(start, end);
+
+  tbody.innerHTML = pageData.map(m => {
+    const scoreColor = m.risk_score >= 80 ? 'high' : m.risk_score >= 60 ? 'medium' : 'low';
+    const recClass = m.recommendation === 'Auto-Approve' ? 'badge-rec-auto' : 
+                     m.recommendation === 'Manual Review - Likely Approve' ? 'badge-rec-likely' :
+                     m.recommendation === 'Manual Review - Conditional' ? 'badge-rec-conditional' : 'badge-rec-reject';
+    return '<tr onclick="openModal('' + m.merchant_id + '')">' +
+      '<td><strong>' + m.merchant_id + '</strong></td>' +
+      '<td>' + m.business_name + '</td>' +
+      '<td>' + m.category + '</td>' +
+      '<td>' +
+        '<div style="display:flex;align-items:center;gap:0.5rem;">' +
+          '<span style="font-weight:600;width:40px;">' + m.risk_score + '</span>' +
+          '<div class="score-bar" style="width:80px;">' +
+            '<div class="score-bar-fill ' + scoreColor + '" style="width:' + m.risk_score + '%"></div>' +
+          '</div>' +
+        '</div>' +
+      '</td>' +
+      '<td><span class="badge badge-grade-' + m.risk_grade + '">Grade ' + m.risk_grade + '</span></td>' +
+      '<td style="font-weight:600;">₹' + m.credit_limit_lakhs.toFixed(2) + 'L</td>' +
+      '<td><span class="badge ' + recClass + '">' + m.recommendation + '</span></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderPagination() {
+  const totalPages = Math.ceil(filteredData.length / pageSize);
+  const pagination = document.getElementById('pagination');
+  let html = '<span class="page-info">' + filteredData.length + ' merchants | Page ' + currentPage + ' of ' + totalPages + '</span>';
+
+  html += '<button class="page-btn" onclick="goToPage(1)" ' + (currentPage===1 ? 'disabled' : '') + '>First</button>';
+  html += '<button class="page-btn" onclick="goToPage(' + (currentPage-1) + ')" ' + (currentPage===1 ? 'disabled' : '') + '>Prev</button>';
+
+  for (let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, currentPage+2); i++) {
+    html += '<button class="page-btn ' + (i===currentPage ? 'active' : '') + '" onclick="goToPage(' + i + ')">' + i + '</button>';
+  }
+
+  html += '<button class="page-btn" onclick="goToPage(' + (currentPage+1) + ')" ' + (currentPage===totalPages ? 'disabled' : '') + '>Next</button>';
+  html += '<button class="page-btn" onclick="goToPage(' + totalPages + ')" ' + (currentPage===totalPages ? 'disabled' : '') + '>Last</button>';
+
+  pagination.innerHTML = html;
+}
+
+function goToPage(page) {
+  currentPage = page;
+  renderTable();
+  renderPagination();
+}
+
+function sortTable(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+
+  filteredData.sort((a, b) => {
+    let va = a[col], vb = b[col];
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    if (va < vb) return sortAsc ? -1 : 1;
+    if (va > vb) return sortAsc ? 1 : -1;
+    return 0;
+  });
+
+  currentPage = 1;
+  renderTable();
+  renderPagination();
+}
+
+function filterData() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  filteredData = merchants.filter(m => {
+    const matchesSearch = !search || 
+      m.merchant_id.toLowerCase().includes(search) ||
+      m.business_name.toLowerCase().includes(search) ||
+      m.category.toLowerCase().includes(search);
+    const matchesGrade = activeFilter === 'all' || m.risk_grade === activeFilter;
+    return matchesSearch && matchesGrade;
+  });
+  currentPage = 1;
+  renderTable();
+  renderPagination();
+}
+
+function setupEventListeners() {
+  document.getElementById('searchInput').addEventListener('input', filterData);
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      filterData();
+    });
+  });
+
+  document.getElementById('modalOverlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  });
+}
+
+function openModal(merchantId) {
+  const m = merchants.find(x => x.merchant_id === merchantId);
+  if (!m) return;
+
+  document.getElementById('modalTitle').textContent = m.business_name;
+  document.getElementById('modalMeta').textContent = m.category + ' | ' + m.entity_type + ' | ' + m.vintage_months + ' months vintage';
+
+  const recClass = m.recommendation === 'Auto-Approve' ? 'auto' : 
+                   m.recommendation === 'Manual Review - Likely Approve' ? 'likely' :
+                   m.recommendation === 'Manual Review - Conditional' ? 'conditional' : 'reject';
+
+  const scoreColor = m.risk_score >= 80 ? 'positive' : m.risk_score >= 60 ? 'warning' : 'negative';
+
+  // Calculate score breakdown values
+  const volPct = Math.min(100, (m.monthly_volume_lakhs / 200) * 100);
+  const activePct = (m.active_days_per_month / 30) * 100;
+  const refundRisk = Math.min(100, m.refund_ratio * 500);
+  const cbRisk = Math.min(100, m.chargeback_ratio * 3000);
+  const settleHealth = m.settlement_score;
+  const dscrHealth = Math.min(100, m.dscr * 20);
+  const vintageHealth = Math.min(100, m.vintage_months / 0.48);
+
+  let bodyHtml = '<div class="modal-section">' +
+    '<div class="recommendation-box ' + recClass + '">' + m.recommendation + '</div>' +
+  '</div>';
+
+  bodyHtml += '<div class="modal-section">' +
+    '<div class="modal-section-title">Scorecard Summary</div>' +
+    '<div class="detail-grid">' +
+      '<div class="detail-item"><div class="label">Risk Score</div><div class="value ' + scoreColor + '">' + m.risk_score + '/100</div></div>' +
+      '<div class="detail-item"><div class="label">Risk Grade</div><div class="value">Grade ' + m.risk_grade + '</div></div>' +
+      '<div class="detail-item"><div class="label">Credit Limit</div><div class="value">₹' + m.credit_limit_lakhs.toFixed(2) + 'L</div></div>' +
+      '<div class="detail-item"><div class="label">Monthly Volume</div><div class="value">₹' + m.monthly_volume_lakhs.toFixed(2) + 'L</div></div>' +
+    '</div></div>';
+
+  bodyHtml += '<div class="modal-section">' +
+    '<div class="modal-section-title">Transaction Profile</div>' +
+    '<div class="detail-grid">' +
+      '<div class="detail-item"><div class="label">Avg Ticket Size</div><div class="value">₹' + m.avg_ticket_size.toFixed(0) + '</div></div>' +
+      '<div class="detail-item"><div class="label">Active Days/Month</div><div class="value">' + m.active_days_per_month + '/30</div></div>' +
+      '<div class="detail-item"><div class="label">Growth Trend (MoM)</div><div class="value ' + (m.growth_trend > 0 ? 'positive' : 'negative') + '">' + (m.growth_trend * 100).toFixed(2) + '%</div></div>' +
+      '<div class="detail-item"><div class="label">Refund Ratio</div><div class="value ' + (m.refund_ratio > 0.15 ? 'negative' : 'positive') + '">' + (m.refund_ratio * 100).toFixed(2) + '%</div></div>' +
+      '<div class="detail-item"><div class="label">Chargeback Ratio</div><div class="value ' + (m.chargeback_ratio > 0.03 ? 'negative' : 'positive') + '">' + (m.chargeback_ratio * 100).toFixed(2) + '%</div></div>' +
+      '<div class="detail-item"><div class="label">Seasonality Index</div><div class="value ' + (m.seasonality_index <= 1.2 ? 'positive' : 'warning') + '">' + m.seasonality_index.toFixed(2) + '</div></div>' +
+    '</div></div>';
+
+  bodyHtml += '<div class="modal-section">' +
+    '<div class="modal-section-title">Financial Health</div>' +
+    '<div class="detail-grid">' +
+      '<div class="detail-item"><div class="label">DSCR</div><div class="value ' + (m.dscr >= 1.5 ? 'positive' : m.dscr >= 1.0 ? 'warning' : 'negative') + '">' + m.dscr.toFixed(2) + 'x</div></div>' +
+      '<div class="detail-item"><div class="label">Settlement Score</div><div class="value">' + m.settlement_score.toFixed(0) + '/100</div></div>' +
+      '<div class="detail-item"><div class="label">GST Score</div><div class="value">' + m.gst_score.toFixed(0) + '/100</div></div>' +
+      '<div class="detail-item"><div class="label">Bank Inflow</div><div class="value">₹' + m.bank_inflow_lakhs.toFixed(2) + 'L</div></div>' +
+      '<div class="detail-item"><div class="label">Existing Debt</div><div class="value">₹' + m.existing_debt_lakhs.toFixed(2) + 'L</div></div>' +
+      '<div class="detail-item"><div class="label">Website Score</div><div class="value">' + m.website_score.toFixed(0) + '/100</div></div>' +
+    '</div></div>';
+
+  bodyHtml += '<div class="modal-section">' +
+    '<div class="modal-section-title">Risk Factor Breakdown</div>' +
+    '<div class="score-breakdown">' +
+      '<div class="breakdown-row">' +
+        '<div class="breakdown-label">Transaction Volume</div>' +
+        '<div class="breakdown-bar"><div class="breakdown-fill" style="width:' + volPct + '%;background:var(--accent)"></div></div>' +
+        '<div class="breakdown-value">₹' + m.monthly_volume_lakhs.toFixed(1) + 'L</div>' +
+      '</div>' +
+      '<div class="breakdown-row">' +
+        '<div class="breakdown-label">Active Days</div>' +
+        '<div class="breakdown-bar"><div class="breakdown-fill" style="width:' + activePct + '%;background:var(--accent)"></div></div>' +
+        '<div class="breakdown-value">' + m.active_days_per_month + '/30</div>' +
+      '</div>' +
+      '<div class="breakdown-row">' +
+        '<div class="breakdown-label">Refund Risk</div>' +
+        '<div class="breakdown-bar"><div class="breakdown-fill" style="width:' + refundRisk + '%;background:' + (m.refund_ratio > 0.15 ? 'var(--danger)' : 'var(--success)') + '"></div></div>' +
+        '<div class="breakdown-value">' + (m.refund_ratio * 100).toFixed(1) + '%</div>' +
+      '</div>' +
+      '<div class="breakdown-row">' +
+        '<div class="breakdown-label">Chargeback Risk</div>' +
+        '<div class="breakdown-bar"><div class="breakdown-fill" style="width:' + cbRisk + '%;background:' + (m.chargeback_ratio > 0.03 ? 'var(--danger)' : 'var(--success)') + '"></div></div>' +
+        '<div class="breakdown-value">' + (m.chargeback_ratio * 100).toFixed(2) + '%</div>' +
+      '</div>' +
+      '<div class="breakdown-row">' +
+        '<div class="breakdown-label">Settlement Health</div>' +
+        '<div class="breakdown-bar"><div class="breakdown-fill" style="width:' + settleHealth + '%;background:' + (m.settlement_score > 70 ? 'var(--success)' : 'var(--warning)') + '"></div></div>' +
+        '<div class="breakdown-value">' + m.settlement_score.toFixed(0) + '</div>' +
+      '</div>' +
+      '<div class="breakdown-row">' +
+        '<div class="breakdown-label">DSCR Coverage</div>' +
+        '<div class="breakdown-bar"><div class="breakdown-fill" style="width:' + dscrHealth + '%;background:' + (m.dscr >= 1.5 ? 'var(--success)' : m.dscr >= 1.0 ? 'var(--warning)' : 'var(--danger)') + '"></div></div>' +
+        '<div class="breakdown-value">' + m.dscr.toFixed(2) + 'x</div>' +
+      '</div>' +
+      '<div class="breakdown-row">' +
+        '<div class="breakdown-label">Business Maturity</div>' +
+        '<div class="breakdown-bar"><div class="breakdown-fill" style="width:' + vintageHealth + '%;background:var(--info)"></div></div>' +
+        '<div class="breakdown-value">' + m.vintage_months + 'mo</div>' +
+      '</div>' +
+    '</div></div>';
+
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  document.getElementById('modalOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function renderGradeChart() {
+  const canvas = document.getElementById('gradeChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  // Fallback dimensions if rect is 0
+  canvas.width = rect.width || 300;
+  canvas.height = rect.height || 260;
+
+  const data = gradeSummary;
+  const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'];
+  const total = data.reduce((sum, d) => sum + d.count, 0);
+
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+  const radius = Math.min(centerX, centerY) - 40;
+
+  let startAngle = -Math.PI / 2;
+
+  data.forEach((d, i) => {
+    const angle = (d.count / total) * 2 * Math.PI;
+
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.arc(centerX, centerY, radius, startAngle, startAngle + angle);
+    ctx.closePath();
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+
+    const labelAngle = startAngle + angle / 2;
+    const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7);
+    const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7);
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(d.grade, labelX, labelY - 8);
+    ctx.font = '12px sans-serif';
+    ctx.fillText(d.count, labelX, labelY + 8);
+
+    startAngle += angle;
+  });
+
+  let legendY = 20;
+  data.forEach((d, i) => {
+    ctx.fillStyle = colors[i];
+    ctx.fillRect(10, legendY, 12, 12);
+    ctx.fillStyle = '#334155';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Grade ' + d.grade + ': ' + d.count + ' (' + (d.count/total*100).toFixed(1) + '%)', 28, legendY + 10);
+    legendY += 20;
+  });
+}
+
+function renderRecChart() {
+  const canvas = document.getElementById('recChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width || 300;
+  canvas.height = rect.height || 260;
+
+  const data = recSummary;
+  const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'];
+  const maxVal = Math.max(...data.map(d => d.count));
+  const barWidth = (canvas.width - 80) / data.length;
+  const chartHeight = canvas.height - 60;
+
+  data.forEach((d, i) => {
+    const barHeight = (d.count / maxVal) * chartHeight * 0.8;
+    const x = 40 + i * barWidth + barWidth * 0.15;
+    const y = canvas.height - 40 - barHeight;
+
+    ctx.fillStyle = colors[i];
+    ctx.fillRect(x, y, barWidth * 0.7, barHeight);
+
+    ctx.fillStyle = '#334155';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(d.count, x + barWidth * 0.35, y - 8);
+
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#64748b';
+    const words = d.recommendation.split(' ');
+    words.forEach((word, wi) => {
+      ctx.fillText(word, x + barWidth * 0.35, canvas.height - 25 + wi * 12);
+    });
+  });
+}
+
+function renderCategoryChart() {
+  const canvas = document.getElementById('categoryChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width || 300;
+  canvas.height = rect.height || 260;
+
+  const data = catSummary.sort((a, b) => b.avg_risk_score - a.avg_risk_score);
+  const maxScore = Math.max(...data.map(d => d.avg_risk_score));
+  const barHeight = (canvas.height - 60) / data.length;
+  const maxBarWidth = canvas.width - 150;
+
+  data.forEach((d, i) => {
+    const y = 30 + i * barHeight;
+    const barWidth = (d.avg_risk_score / 100) * maxBarWidth;
+    const color = d.avg_risk_score >= 75 ? '#22c55e' : d.avg_risk_score >= 65 ? '#3b82f6' : d.avg_risk_score >= 55 ? '#f59e0b' : '#ef4444';
+
+    ctx.fillStyle = color;
+    ctx.fillRect(120, y, barWidth, barHeight * 0.7);
+
+    ctx.fillStyle = '#334155';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(d.category, 110, y + barHeight * 0.35);
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(d.avg_risk_score.toFixed(1), 125 + barWidth + 5, y + barHeight * 0.35);
+  });
+}
+
+function renderScoreChart() {
+  const canvas = document.getElementById('scoreChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width || 300;
+  canvas.height = rect.height || 260;
+
+  const data = scoreDist;
+  const colors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#16a34a'];
+  const maxVal = Math.max(...data.map(d => d.count));
+  const barWidth = (canvas.width - 80) / data.length;
+  const chartH = canvas.height - 60;
+
+  data.forEach((d, i) => {
+    const barHeight = (d.count / maxVal) * chartH * 0.8;
+    const x = 40 + i * barWidth + barWidth * 0.2;
+    const y = canvas.height - 40 - barHeight;
+
+    ctx.fillStyle = colors[i];
+    ctx.fillRect(x, y, barWidth * 0.6, barHeight);
+
+    ctx.fillStyle = '#334155';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(d.count, x + barWidth * 0.3, y - 8);
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(d.score_range, x + barWidth * 0.3, canvas.height - 22);
+  });
+}
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    renderGradeChart();
+    renderRecChart();
+    renderCategoryChart();
+    renderScoreChart();
+  }, 200);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Wait for fonts and layout to settle
+  if (document.readyState === 'complete') {
+    init();
+  } else {
+    window.addEventListener('load', init);
+  }
+});
+</script>
+
+</body>
+</html>
